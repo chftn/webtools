@@ -1,0 +1,457 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+<title>Compound Interest Calculator — Savings Goal Growth | Toolbox</title>
+<link rel="stylesheet" href="../../assets/css/base.css">
+<meta name="description" content="Free compound-interest calculator for savings goals: project growth with regular contributions, see time to target and compare scenarios. Runs in your browser — nothing is uploaded.">
+<meta name="keywords" content="compound interest calculator, savings goal, investment growth, regular contributions, time to target, future value">
+<meta name="author" content="ATLAS / George">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#070b12">
+<link rel="canonical" href="https://chftn.github.io/webtools/tools/compound-interest/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Toolbox">
+<meta property="og:title" content="Compound Interest Calculator — Savings Goal Growth | Toolbox">
+<meta property="og:description" content="Free compound-interest calculator for savings goals: project growth with regular contributions, see time to target and compare scenarios. Runs in your browser — nothing is uploaded.">
+<meta property="og:url" content="https://chftn.github.io/webtools/tools/compound-interest/">
+<meta property="og:locale" content="en_AU">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Compound Interest Calculator — Savings Goal Growth | Toolbox">
+<meta name="twitter:description" content="Free compound-interest calculator for savings goals: project growth with regular contributions, see time to target and compare scenarios. Runs in your browser — nothing is uploaded.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Compound Interest Calculator \u2014 Savings Goal Growth | Toolbox","url":"https://chftn.github.io/webtools/tools/compound-interest/","description":"Free compound-interest calculator for savings goals: project growth with regular contributions, see time to target and compare scenarios. Runs in your browser \u2014 nothing is uploaded.","inLanguage":"en","isAccessibleForFree":true,"operatingSystem":"Any","browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"applicationCategory":"FinanceApplication"}</script>
+</head>
+<body>
+<div class="topbar"><div class="inner"><span class="brand">📈 Compound Interest</span><span class="spacer"></span>
+<a class="back" href="../../index.html">← All tools</a></div></div>
+<div class="wrap" role="main">
+  <h1>Compound Interest</h1><p class="sub">Project how regular contributions grow with compounding — and see what fees really cost you.</p>
+
+  <!-- ---------------- Inputs ---------------- -->
+  <div class="card">
+    <div class="row">
+      <div><label for="initial">Initial amount</label>
+        <input id="initial" type="number" inputmode="decimal" min="0" step="100" value="10000"></div>
+      <div><label for="contribution">Recurring contribution</label>
+        <input id="contribution" type="number" inputmode="decimal" min="0" step="50" value="500"></div>
+      <div><label for="freq">Contribution frequency</label>
+        <select id="freq">
+          <option value="monthly">Monthly</option>
+          <option value="fortnightly">Fortnightly</option>
+          <option value="weekly">Weekly</option>
+          <option value="annually">Annually</option>
+        </select></div>
+    </div>
+    <div class="row">
+      <div><label for="rate">Annual return (%)</label>
+        <input id="rate" type="number" inputmode="decimal" step="0.1" value="7"></div>
+      <div><label for="years">Years</label>
+        <input id="years" type="number" inputmode="numeric" min="1" max="100" step="1" value="20"></div>
+      <div><label for="increase">Annual contribution increase (%)</label>
+        <input id="increase" type="number" inputmode="decimal" step="0.5" min="0" value="0"></div>
+      <div><label for="fee">Annual fee (%)</label>
+        <input id="fee" type="number" inputmode="decimal" step="0.05" min="0" value="0"></div>
+    </div>
+    <div class="actions">
+      <button class="btn sm" id="resetBtn" type="button">Reset inputs</button>
+      <span class="muted" style="align-self:center;font-size:13px">Everything updates live and saves automatically.</span>
+    </div>
+  </div>
+
+  <!-- ---------------- Results ---------------- -->
+  <h2>Results</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="v" id="kFinal">—</div><div class="l">Final balance</div></div>
+    <div class="kpi"><div class="v" id="kContrib">—</div><div class="l">Total contributions</div></div>
+    <div class="kpi"><div class="v" id="kInterest">—</div><div class="l">Total interest</div></div>
+    <div class="kpi"><div class="v" id="kEar">—</div><div class="l">Effective annual rate</div></div>
+    <div class="kpi"><div class="v" id="kFees">—</div><div class="l">Est. fee cost</div></div>
+  </div>
+  <p class="muted" id="growthNote" style="font-size:13px;margin-top:10px"></p>
+
+  <!-- ---------------- Chart ---------------- -->
+  <h2>Balance vs contributions</h2>
+  <div class="card">
+    <div id="chart"></div>
+  </div>
+
+  <!-- ---------------- Year table ---------------- -->
+  <h2>Year by year</h2>
+  <div class="tablewrap">
+    <table id="yearTable">
+      <thead><tr>
+        <th>Year</th><th class="num">Contributions</th><th class="num">Cumulative contributions</th>
+        <th class="num">Interest</th><th class="num">Cumulative interest</th><th class="num">Balance</th>
+      </tr></thead>
+      <tbody id="yearBody"></tbody>
+    </table>
+  </div>
+
+  <!-- ---------------- Scenarios ---------------- -->
+  <h2>Saved scenarios</h2>
+  <div class="card">
+    <div class="row">
+      <div style="flex:2"><label for="scenarioName">Scenario name</label>
+        <input id="scenarioName" type="text" placeholder="e.g. Salary + 3% raises, 30 years"></div>
+      <div style="align-self:flex-end"><button class="btn primary" id="saveScenario" type="button">💾 Save current inputs</button></div>
+    </div>
+    <div class="tablewrap" style="margin-top:14px">
+      <table>
+        <thead><tr><th>Name</th><th>Saved</th><th>Setup</th><th></th></tr></thead>
+        <tbody id="scenarioBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="exportSchedule" type="button">⬇ Export schedule CSV</button>
+    <button class="btn" id="exportScenarios" type="button">⬇ Export scenarios CSV</button>
+    <button class="btn" id="importScenarios" type="button">⬆ Import scenarios CSV</button>
+    <button class="btn bad" id="clearBtn" type="button">🗑 Clear data</button>
+  </div>
+
+  <footer>Data stays in this browser · <a href="../../index.html">Toolbox</a></footer>
+</div>
+
+<script src="../../assets/js/store.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var NS = "compound-interest";                 // one namespace for the whole tool
+  var PERIODS = { monthly: 12, fortnightly: 26, weekly: 52, annually: 1 };
+  var FREQ_LABEL = { monthly: "monthly", fortnightly: "fortnightly", weekly: "weekly", annually: "annually" };
+
+  var DEFAULTS = {
+    initial: 10000, contribution: 500, freq: "monthly",
+    rate: 7, years: 20, increase: 0, fee: 0
+  };
+
+  /* saved shape: { inputs:{...}, scenarios:[{id,name,saved,inputs}] } */
+  var state = Store.get(NS, null);
+  if (!state || typeof state !== "object") state = { inputs: null, scenarios: [] };
+  if (!Array.isArray(state.scenarios)) state.scenarios = [];
+  var inputs = Object.assign({}, DEFAULTS, state.inputs || {});
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function persist() {
+    state.inputs = inputs;
+    Store.set(NS, state);
+  }
+
+  /* ---------- number helpers ---------- */
+  function clampNum(v, min, max, fallback) {
+    var n = parseFloat(v);
+    if (!isFinite(n)) n = fallback;
+    if (min != null && n < min) n = min;
+    if (max != null && n > max) n = max;
+    return n;
+  }
+  function niceStep(raw) {                       // 1/2/5 × 10^k axis step
+    if (!(raw > 0)) return 1;
+    var mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    var norm = raw / mag;
+    var mult = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+    return mult * mag;
+  }
+  function compact(v) {
+    var a = Math.abs(v);
+    var s = v < 0 ? "-" : "";
+    if (a >= 1e9) return s + (a / 1e9).toFixed(1).replace(/\.0$/, "") + "B";
+    if (a >= 1e6) return s + (a / 1e6).toFixed(1).replace(/\.0$/, "") + "M";
+    if (a >= 1e3) return s + Math.round(a / 1e3) + "k";
+    return s + Math.round(a);
+  }
+
+  /* ---------- simulation ----------
+     Growth is modelled geometrically: the annual fee haircuts the annual return
+     ((1+r)*(1-fee)-1), and that net annual rate is converted to a per-period rate
+     so the contribution frequency exactly matches the compounding frequency.
+     Contributions rise by `increase`% at the end of every completed year.     */
+  function simulate(inp) {
+    var n = PERIODS[inp.freq] || 12;
+    var netAnnual = (1 + inp.rate / 100) * (1 - inp.fee / 100) - 1;
+    var per = Math.pow(1 + netAnnual, 1 / n) - 1;
+
+    var totalPeriods = Math.max(0, Math.round(inp.years * n));
+    var bal = inp.initial, contrib = inp.contribution;
+    var cumC = 0, cumI = 0, yC = 0, yI = 0;
+    var rows = [{ year: 0, contributions: 0, cumContrib: 0, interest: 0, cumInterest: 0, balance: bal }];
+
+    for (var t = 1; t <= totalPeriods; t++) {
+      var int = bal * per;
+      bal += int + contrib;
+      yI += int; yC += contrib; cumI += int; cumC += contrib;
+      if (t % n === 0 || t === totalPeriods) {
+        rows.push({ year: rows.length, contributions: yC, cumContrib: cumC,
+                    interest: yI, cumInterest: cumI, balance: bal });
+        yC = 0; yI = 0;
+        contrib *= 1 + inp.increase / 100;       // annual raise to the contribution
+      }
+    }
+    return { rows: rows, netAnnual: netAnnual, per: per, periodsPerYear: n,
+             final: rows[rows.length - 1].balance, cumContrib: cumC, cumInterest: cumI,
+             contributed: inp.initial + cumC };
+  }
+
+  /* ---------- hand-rolled SVG line chart ---------- */
+  function drawChart(rows) {
+    var W = 760, H = 340, L = 66, R = 18, T = 20, B = 36;
+    var iw = W - L - R, ih = H - T - B;
+    var maxV = 1;
+    rows.forEach(function (r) { maxV = Math.max(maxV, r.balance, r.cumContrib); });
+    var step = niceStep(maxV / 4);
+    var yMax = Math.ceil(maxV / step) * step;
+    var n = rows.length - 1;
+
+    var xFor = function (i) { return L + (n ? iw * i / n : 0); };
+    var yFor = function (v) { return T + ih * (1 - v / yMax); };
+    var line = function (key) {
+      return rows.map(function (r, i) { return (i ? "L" : "M") + xFor(i).toFixed(1) + " " + yFor(r[key]).toFixed(1); }).join(" ");
+    };
+
+    var svg = [];
+    svg.push('<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" ' +
+             'aria-label="Chart of balance and cumulative contributions over time" ' +
+             'style="width:100%;height:auto;display:block;font-family:inherit">');
+
+    // horizontal grid + y labels
+    for (var v = 0; v <= yMax + 1e-9; v += step) {
+      var y = yFor(v).toFixed(1);
+      svg.push('<line x1="' + L + '" y1="' + y + '" x2="' + (W - R) + '" y2="' + y + '" stroke="rgba(34,211,238,.28)" stroke-width="1"/>');
+      svg.push('<text x="' + (L - 8) + '" y="' + y + '" fill="#5f7b8c" font-size="11" text-anchor="end" dominant-baseline="middle">' + compact(v) + '</text>');
+    }
+    // x labels (roughly 8 ticks max)
+    var xEvery = Math.max(1, Math.ceil(n / 8));
+    for (var i = 0; i <= n; i += xEvery) {
+      svg.push('<text x="' + xFor(i).toFixed(1) + '" y="' + (H - 12) + '" fill="#5f7b8c" font-size="11" text-anchor="middle">' + rows[i].year + '</text>');
+    }
+    svg.push('<text x="' + (L + iw / 2) + '" y="' + (H - 1) + '" fill="#5f7b8c" font-size="11" text-anchor="middle">year</text>');
+
+    // area under the balance line
+    var area = line("balance") + " L" + xFor(n).toFixed(1) + " " + yFor(0) + " L" + xFor(0).toFixed(1) + " " + yFor(0) + " Z";
+    svg.push('<path d="' + area + '" fill="rgba(34,211,238,.14)"/>');
+
+    svg.push('<path d="' + line("cumContrib") + '" fill="none" stroke="#38e0a0" stroke-width="2" stroke-linejoin="round"/>');
+    svg.push('<path d="' + line("balance") + '" fill="none" stroke="#22d3ee" stroke-width="2.5" stroke-linejoin="round"/>');
+
+    // end dots
+    svg.push('<circle cx="' + xFor(n).toFixed(1) + '" cy="' + yFor(rows[n].cumContrib).toFixed(1) + '" r="3" fill="#38e0a0"/>');
+    svg.push('<circle cx="' + xFor(n).toFixed(1) + '" cy="' + yFor(rows[n].balance).toFixed(1) + '" r="3.5" fill="#22d3ee"/>');
+
+    // legend
+    svg.push('<g font-size="12">');
+    svg.push('<rect x="' + (L + 6) + '" y="' + (T - 2) + '" width="12" height="3" rx="1.5" fill="#22d3ee"/>' +
+             '<text x="' + (L + 24) + '" y="' + (T + 4) + '" fill="#c7d6e2">Balance</text>');
+    svg.push('<rect x="' + (L + 100) + '" y="' + (T - 2) + '" width="12" height="3" rx="1.5" fill="#38e0a0"/>' +
+             '<text x="' + (L + 118) + '" y="' + (T + 4) + '" fill="#c7d6e2">Contributions paid in</text>');
+    svg.push('</g>');
+    svg.push('</svg>');
+    $("chart").innerHTML = svg.join("");
+  }
+
+  /* ---------- render ---------- */
+  function readInputs() {
+    inputs.initial = clampNum($("initial").value, 0, 1e12, DEFAULTS.initial);
+    inputs.contribution = clampNum($("contribution").value, 0, 1e12, DEFAULTS.contribution);
+    inputs.freq = $("freq").value in PERIODS ? $("freq").value : "monthly";
+    inputs.rate = clampNum($("rate").value, -50, 100, DEFAULTS.rate);
+    inputs.years = Math.round(clampNum($("years").value, 1, 100, DEFAULTS.years));
+    inputs.increase = clampNum($("increase").value, 0, 100, 0);
+    inputs.fee = clampNum($("fee").value, 0, 20, 0);
+  }
+
+  function fillInputs() {
+    $("initial").value = inputs.initial;
+    $("contribution").value = inputs.contribution;
+    $("freq").value = inputs.freq;
+    $("rate").value = inputs.rate;
+    $("years").value = inputs.years;
+    $("increase").value = inputs.increase;
+    $("fee").value = inputs.fee;
+  }
+
+  function render() {
+    var res = simulate(inputs);
+    var rows = res.rows;
+
+    $("kFinal").textContent = Store.money(res.final);
+    $("kContrib").textContent = Store.money(res.contributed);
+    $("kInterest").textContent = Store.money(res.cumInterest);
+    $("kEar").textContent = Store.num(res.netAnnual * 100, 2) + "%";
+
+    // fee cost = difference between no-fee outcome and actual outcome
+    if (inputs.fee > 0) {
+      var noFee = simulate(Object.assign({}, inputs, { fee: 0 }));
+      $("kFees").textContent = Store.money(noFee.final - res.final);
+    } else {
+      $("kFees").textContent = Store.money(0);
+    }
+
+    var multiple = res.contributed > 0 ? res.final / res.contributed : 0;
+    $("growthNote").textContent =
+      Store.money(res.contributed) + " put in grows to " + Store.money(res.final) +
+      " over " + inputs.years + " years (" + Store.num(multiple, 2) + "× your money in · " +
+      Store.num(res.netAnnual * 100, 2) + "% net effective per year, compounding " +
+      FREQ_LABEL[inputs.freq] + ").";
+
+    drawChart(rows);
+
+    var html = "";
+    rows.forEach(function (r) {
+      html += "<tr><td>" + r.year + "</td>" +
+        '<td class="num">' + Store.money(r.contributions) + "</td>" +
+        '<td class="num">' + Store.money(r.cumContrib) + "</td>" +
+        '<td class="num">' + Store.money(r.interest) + "</td>" +
+        '<td class="num">' + Store.money(r.cumInterest) + "</td>" +
+        '<td class="num"><strong>' + Store.money(r.balance) + "</strong></td></tr>";
+    });
+    $("yearBody").innerHTML = html;
+
+    persist();
+    renderScenarios();
+  }
+
+  /* ---------- scenarios ---------- */
+  function setupSummary(i) {
+    return Store.money(i.initial) + " + " + Store.money(i.contribution) + "/" + FREQ_LABEL[i.freq] +
+      " · " + Store.num(i.rate, 2) + "% · " + i.years + "y" +
+      (i.increase ? " · +" + Store.num(i.increase, 2) + "%/y" : "") +
+      (i.fee ? " · " + Store.num(i.fee, 2) + "% fee" : "");
+  }
+
+  function renderScenarios() {
+    var list = state.scenarios;
+    if (!list.length) {
+      $("scenarioBody").innerHTML = '<tr><td colspan="4" class="empty">No scenarios yet.</td></tr>';
+      return;
+    }
+    var html = "";
+    list.forEach(function (s) {
+      html += '<tr><td><strong>' + Store.esc(s.name) + "</strong></td>" +
+        '<td class="muted">' + Store.esc(s.saved || "") + "</td>" +
+        '<td class="muted">' + Store.esc(setupSummary(s.inputs)) + "</td>" +
+        '<td style="white-space:nowrap">' +
+          '<button class="btn sm" data-load="' + Store.esc(s.id) + '" type="button">Load</button> ' +
+          '<button class="btn sm bad" data-del="' + Store.esc(s.id) + '" type="button">Delete</button>' +
+        "</td></tr>";
+    });
+    $("scenarioBody").innerHTML = html;
+  }
+
+  $("saveScenario").addEventListener("click", function () {
+    var name = $("scenarioName").value.trim();
+    if (!name) { Store.toast("Give the scenario a name first"); $("scenarioName").focus(); return; }
+    state.scenarios.unshift({ id: Store.uid(), name: name, saved: Store.today(),
+                              inputs: Object.assign({}, inputs) });
+    $("scenarioName").value = "";
+    persist(); renderScenarios();
+    Store.toast('Saved "' + name + '"');
+  });
+
+  $("scenarioBody").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    var id = b.getAttribute("data-load") || b.getAttribute("data-del");
+    var idx = state.scenarios.findIndex(function (s) { return s.id === id; });
+    if (idx < 0) return;
+    if (b.hasAttribute("data-load")) {
+      inputs = Object.assign({}, DEFAULTS, state.scenarios[idx].inputs);
+      fillInputs(); render();
+      Store.toast('Loaded "' + state.scenarios[idx].name + '"');
+    } else {
+      if (!confirm('Delete scenario "' + state.scenarios[idx].name + '"? This cannot be undone.')) return;
+      var gone = state.scenarios.splice(idx, 1)[0];
+      persist(); renderScenarios();
+      Store.toast('Deleted "' + gone.name + '"');
+    }
+  });
+
+  /* ---------- export / import ---------- */
+  $("exportSchedule").addEventListener("click", function () {
+    var res = simulate(inputs);
+    var rows = res.rows.map(function (r) {
+      return {
+        year: r.year,
+        contributions_this_year: r.contributions.toFixed(2),
+        cumulative_contributions: r.cumContrib.toFixed(2),
+        interest_this_year: r.interest.toFixed(2),
+        cumulative_interest: r.cumInterest.toFixed(2),
+        balance: r.balance.toFixed(2)
+      };
+    });
+    Store.exportCSV("compound-interest-schedule", rows,
+      ["year", "contributions_this_year", "cumulative_contributions",
+       "interest_this_year", "cumulative_interest", "balance"]);
+  });
+
+  $("exportScenarios").addEventListener("click", function () {
+    if (!state.scenarios.length) { Store.toast("No scenarios to export"); return; }
+    var rows = state.scenarios.map(function (s) {
+      return {
+        name: s.name, saved: s.saved, initial: s.inputs.initial,
+        contribution: s.inputs.contribution, freq: s.inputs.freq,
+        rate: s.inputs.rate, years: s.inputs.years,
+        increase: s.inputs.increase, fee: s.inputs.fee
+      };
+    });
+    Store.exportCSV("compound-interest-scenarios", rows,
+      ["name", "saved", "initial", "contribution", "freq", "rate", "years", "increase", "fee"]);
+  });
+
+  $("importScenarios").addEventListener("click", function () {
+    Store.importCSV(function (objs) {
+      var added = 0;
+      objs.forEach(function (o) {
+        var name = String(o.name || o.scenario || "").trim();
+        if (!name) return;
+        state.scenarios.unshift({
+          id: Store.uid(), name: name, saved: o.saved || Store.today(),
+          inputs: {
+            initial: clampNum(o.initial, 0, 1e12, DEFAULTS.initial),
+            contribution: clampNum(o.contribution, 0, 1e12, DEFAULTS.contribution),
+            freq: (String(o.freq || "").toLowerCase() in PERIODS) ? String(o.freq).toLowerCase() : "monthly",
+            rate: clampNum(o.rate, -50, 100, DEFAULTS.rate),
+            years: Math.round(clampNum(o.years, 1, 100, DEFAULTS.years)),
+            increase: clampNum(o.increase, 0, 100, 0),
+            fee: clampNum(o.fee, 0, 20, 0)
+          }
+        });
+        added++;
+      });
+      persist(); renderScenarios();
+      if (added) Store.toast("Imported " + added + " scenario(s)");
+    });
+  });
+
+  $("clearBtn").addEventListener("click", function () {
+    if (!confirm("Clear this tool's saved data — inputs and all scenarios? This cannot be undone.")) return;
+    Store.remove(NS);
+    state = { inputs: null, scenarios: [] };
+    inputs = Object.assign({}, DEFAULTS);
+    fillInputs();
+    $("scenarioName").value = "";
+    Store.toast("Data cleared");
+    render();
+  });
+
+  $("resetBtn").addEventListener("click", function () {
+    inputs = Object.assign({}, DEFAULTS);
+    fillInputs(); render();
+    Store.toast("Inputs reset to defaults");
+  });
+
+  /* ---------- wiring ---------- */
+  ["initial", "contribution", "freq", "rate", "years", "increase", "fee"].forEach(function (id) {
+    // live update while typing…
+    $(id).addEventListener("input", function () { readInputs(); render(); });
+    // …and on commit, echo the clamped value back so a blank/junk field never
+    // silently shows results computed from a hidden fallback.
+    $(id).addEventListener("change", function () { readInputs(); fillInputs(); render(); });
+  });
+
+  fillInputs();
+  render();
+})();
+</script>
+</body></html>

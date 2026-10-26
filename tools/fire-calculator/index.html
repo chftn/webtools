@@ -1,0 +1,330 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+<title>FIRE Calculator — Financial Independence &amp; Years to FI | Toolbox</title>
+<link rel="stylesheet" href="../../assets/css/base.css">
+<meta name="description" content="Free FIRE calculator: work out your financial-independence number, years to FI and safe withdrawal rate from your savings, spending and expected return. Private, local-first, runs in your browser.">
+<meta name="keywords" content="FIRE calculator, financial independence, FI number, years to FI, safe withdrawal rate, early retirement, 4% rule">
+<meta name="author" content="ATLAS / George">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#070b12">
+<link rel="canonical" href="https://chftn.github.io/webtools/tools/fire-calculator/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Toolbox">
+<meta property="og:title" content="FIRE Calculator — Financial Independence &amp; Years to FI | Toolbox">
+<meta property="og:description" content="Free FIRE calculator: work out your financial-independence number, years to FI and safe withdrawal rate from your savings, spending and expected return. Private, local-first, runs in your browser.">
+<meta property="og:url" content="https://chftn.github.io/webtools/tools/fire-calculator/">
+<meta property="og:locale" content="en_AU">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="FIRE Calculator — Financial Independence &amp; Years to FI | Toolbox">
+<meta name="twitter:description" content="Free FIRE calculator: work out your financial-independence number, years to FI and safe withdrawal rate from your savings, spending and expected return. Private, local-first, runs in your browser.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"FIRE Calculator \u2014 Financial Independence & Years to FI | Toolbox","url":"https://chftn.github.io/webtools/tools/fire-calculator/","description":"Free FIRE calculator: work out your financial-independence number, years to FI and safe withdrawal rate from your savings, spending and expected return. Private, local-first, runs in your browser.","inLanguage":"en","isAccessibleForFree":true,"operatingSystem":"Any","browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"applicationCategory":"FinanceApplication"}</script>
+</head>
+<body>
+<div class="topbar"><div class="inner"><span class="brand">🔥 FIRE Calculator</span><span class="spacer"></span>
+<a class="back" href="../../index.html">← All tools</a></div></div>
+<div class="wrap" role="main">
+  <h1>FIRE Calculator</h1><p class="sub">Financial-independence target, real-return projection, and years to FI.</p>
+
+  <!-- ---------- Inputs ---------- -->
+  <div class="card">
+    <h2 style="margin-top:0">Your numbers</h2>
+    <div class="row">
+      <div><label for="age">Current age</label><input id="age" type="number" min="0" max="120" step="1"></div>
+      <div><label for="balance">Current invested balance</label><input id="balance" type="number" min="0" step="1000"></div>
+    </div>
+    <div class="row">
+      <div><label for="savings">Annual savings</label><input id="savings" type="number" min="0" step="1000"></div>
+      <div><label for="spending">Annual spending in retirement</label><input id="spending" type="number" min="0" step="1000"></div>
+    </div>
+    <div class="row">
+      <div><label for="ret">Expected nominal return %</label><input id="ret" type="number" step="0.1"></div>
+      <div><label for="inf">Inflation %</label><input id="inf" type="number" step="0.1"></div>
+      <div><label for="swr">Safe withdrawal rate %</label><input id="swr" type="number" step="0.1" min="0.1"></div>
+    </div>
+  </div>
+
+  <!-- ---------- Results ---------- -->
+  <h2>Results</h2>
+  <div class="kpis" id="kpis"></div>
+  <div style="margin:14px 0">
+    <div class="muted" style="font-size:12px;display:flex;justify-content:space-between">
+      <span id="progLabel">Progress to FI</span><span id="progPct"></span>
+    </div>
+    <div class="bar" style="margin-top:6px"><span id="progBar" style="width:0%"></span></div>
+  </div>
+  <p class="sub" id="assump"></p>
+
+  <!-- ---------- Projection ---------- -->
+  <h2>Year-by-year projection</h2>
+  <div class="tablewrap" id="projWrap"><div class="empty">No projection yet.</div></div>
+
+  <!-- ---------- Scenarios ---------- -->
+  <h2>Saved scenarios</h2>
+  <div class="row" style="align-items:flex-end">
+    <div style="flex:2"><label for="scName">Scenario name</label><input id="scName" type="text" placeholder="e.g. Lean FIRE 2027"></div>
+    <div style="flex:0 0 auto;min-width:auto"><button class="btn primary" id="saveBtn">💾 Save current</button></div>
+  </div>
+  <div class="actions">
+    <button class="btn" id="expBtn">⬇ Export CSV</button>
+    <button class="btn" id="impBtn">⬆ Import CSV</button>
+    <button class="btn bad" id="clearBtn">🗑 Clear data</button>
+  </div>
+  <div class="tablewrap" id="scWrap"><div class="empty">No scenarios saved yet.</div></div>
+
+  <footer>Data stays in this browser · <a href="../../index.html">Toolbox</a></footer>
+</div>
+<script src="../../assets/js/store.js"></script>
+<script>
+(function () {
+  "use strict";
+  const NS = "fire-calculator";
+
+  const DEFAULTS = {
+    age: 30, balance: 100000, savings: 30000,
+    ret: 7, inf: 2.5, spending: 50000, swr: 4
+  };
+  const FIELDS = ["age", "balance", "savings", "ret", "inf", "spending", "swr"];
+  const SC_COLS = ["name", "age", "balance", "savings", "ret", "inf", "spending", "swr",
+    "fiNumber", "years", "fiAge", "savedAt"];
+
+  const $ = (id) => document.getElementById(id);
+
+  // One namespace holds everything: { inputs, scenarios }
+  let db = Store.get(NS, null);
+  if (!db || typeof db !== "object") db = { inputs: Object.assign({}, DEFAULTS), scenarios: [] };
+  if (!db.inputs) db.inputs = Object.assign({}, DEFAULTS);
+  if (!Array.isArray(db.scenarios)) db.scenarios = [];
+
+  function save() { Store.set(NS, db); }
+
+  /* ---------- core math ---------- */
+
+  // Real (inflation-adjusted) return from nominal return and inflation.
+  function realReturn(rPct, iPct) { return ((1 + rPct / 100) / (1 + iPct / 100)) - 1; }
+
+  function readInputs() {
+    const o = {};
+    FIELDS.forEach((f) => {
+      const v = parseFloat($(f).value);
+      o[f] = isFinite(v) ? v : 0;
+    });
+    if (o.swr <= 0) o.swr = 0.1;              // guard against divide-by-zero
+    if (o.balance < 0) o.balance = 0;
+    if (o.savings < 0) o.savings = 0;
+    if (o.spending < 0) o.spending = 0;
+    if (o.age < 0) o.age = 0;
+    return o;
+  }
+
+  /* Simulate year by year in real terms (today's dollars), so the FI target stays
+     constant and the growth rate used is the real return. Contributions are treated
+     as constant real dollars (i.e. they keep pace with inflation). */
+  function simulate(inp) {
+    const rr = realReturn(inp.ret, inp.inf);
+    const fi = inp.swr > 0 ? inp.spending / (inp.swr / 100) : Infinity;
+    const MAXY = 80;
+    const rows = [];
+    let bal = inp.balance;
+    let years = Infinity;
+
+    if (fi <= 0) { years = 0; return { rr, fi, years, rows, achieved: true }; }
+    if (bal >= fi) { years = 0; return { rr, fi, years, rows, achieved: true }; }
+
+    for (let y = 1; y <= MAXY; y++) {
+      const start = bal;
+      const growth = start * rr;                 // growth on the opening balance
+      const end = start + growth + inp.savings;  // then add this year's contributions
+      rows.push({ year: y, age: inp.age + y, start: start, contrib: inp.savings, growth: growth, end: end });
+
+      if (end >= fi && years === Infinity) {
+        // Interpolate the fraction of the year in which the target is crossed.
+        const denom = start * rr + inp.savings;
+        let f = denom > 0 ? (fi - start) / denom : 1;
+        f = Math.max(0, Math.min(1, f));
+        years = (y - 1) + f;
+      }
+      bal = end;
+      if (years !== Infinity) break;
+    }
+    return { rr, fi, years, rows, achieved: years !== Infinity };
+  }
+
+  /* ---------- render ---------- */
+
+  function render() {
+    const inp = readInputs();
+    const res = simulate(inp);
+
+    // KPIs
+    const yearsTxt = res.achieved
+      ? (res.years === 0 ? "Already there" : Store.num(res.years, 1) + " yrs")
+      : "Not reachable";
+    const fiAgeTxt = res.achieved
+      ? (res.years === 0 ? "—" : Store.num(inp.age + res.years, 1))
+      : "—";
+    $("kpis").innerHTML =
+      kpi(Store.money(res.fi), "FI number") +
+      kpi((res.rr * 100).toFixed(2) + "%", "Real return") +
+      kpi(yearsTxt, "Years to FI") +
+      kpi(fiAgeTxt, "Projected FI age") +
+      kpi(Store.money(inp.spending), "Retirement spend / yr");
+
+    // Progress bar
+    const pct = res.fi > 0 ? Math.min(100, (inp.balance / res.fi) * 100) : 100;
+    $("progBar").style.width = pct.toFixed(1) + "%";
+    $("progBar").style.background = pct >= 100 ? "var(--accent2)" : "var(--accent)";
+    $("progPct").textContent = pct.toFixed(1) + "%";
+    $("progLabel").textContent = Store.money(inp.balance) + " of " + Store.money(res.fi);
+
+    $("assump").textContent =
+      "Nominal return " + inp.ret + "% − inflation " + inp.inf + "% → real " +
+      (res.rr * 100).toFixed(2) + "%. Simulation is in today's dollars with annual compounding; " +
+      "savings held constant in real terms. Withdrawal rate " + inp.swr + "%.";
+
+    // Projection table
+    if (!res.rows.length) {
+      $("projWrap").innerHTML = '<div class="empty">' +
+        (res.years === 0 ? "You are already at or past your FI number 🎉" : "No projection available.") +
+        "</div>";
+    } else {
+      let h = "<table><thead><tr><th>Age</th><th class=\"num\">Start balance</th>" +
+        "<th class=\"num\">Contributions</th><th class=\"num\">Growth</th>" +
+        "<th class=\"num\">End balance</th><th class=\"num\">% of FI</th></tr></thead><tbody>";
+      res.rows.forEach((row) => {
+        const pc = res.fi > 0 ? (row.end / res.fi) * 100 : 100;
+        h += "<tr><td>" + Store.num(row.age, 0) + "</td>" +
+          "<td class=\"num\">" + Store.money(row.start) + "</td>" +
+          "<td class=\"num pos\">" + Store.money(row.contrib) + "</td>" +
+          "<td class=\"num\">" + Store.money(row.growth) + "</td>" +
+          "<td class=\"num\">" + Store.money(row.end) + "</td>" +
+          "<td class=\"num\">" + pc.toFixed(0) + "%</td></tr>";
+      });
+      h += "</tbody></table>";
+      $("projWrap").innerHTML = h;
+    }
+
+    renderScenarios();
+  }
+
+  function kpi(v, l) { return '<div class="kpi"><div class="v">' + v + '</div><div class="l">' + l + "</div></div>"; }
+
+  function renderScenarios() {
+    if (!db.scenarios.length) {
+      $("scWrap").innerHTML = '<div class="empty">No scenarios saved yet.</div>';
+      return;
+    }
+    let h = "<table><thead><tr><th>Name</th><th class=\"num\">FI number</th><th class=\"num\">Years</th>" +
+      "<th class=\"num\">FI age</th><th>Saved</th><th></th></tr></thead><tbody>";
+    db.scenarios.forEach((s) => {
+      h += "<tr><td>" + Store.esc(s.name) + "</td>" +
+        "<td class=\"num\">" + Store.money(s.fiNumber) + "</td>" +
+        "<td class=\"num\">" + (s.years == null || s.years === "" ? "—" : Store.num(s.years, 1)) + "</td>" +
+        "<td class=\"num\">" + (s.fiAge == null || s.fiAge === "" ? "—" : Store.num(s.fiAge, 1)) + "</td>" +
+        "<td class=\"muted\">" + Store.esc(s.savedAt || "") + "</td>" +
+        '<td><button class="btn sm" data-load="' + Store.esc(s.id) + '">Load</button> ' +
+        '<button class="btn sm bad" data-del="' + Store.esc(s.id) + '">Delete</button></td></tr>';
+    });
+    h += "</tbody></table>";
+    $("scWrap").innerHTML = h;
+
+    $("scWrap").querySelectorAll("[data-load]").forEach((b) => {
+      b.onclick = () => loadScenario(b.getAttribute("data-load"));
+    });
+    $("scWrap").querySelectorAll("[data-del]").forEach((b) => {
+      b.onclick = () => {
+        const idx = db.scenarios.findIndex((s) => s.id === b.getAttribute("data-del"));
+        if (idx < 0) return;
+        if (!confirm('Delete scenario "' + db.scenarios[idx].name + '"?')) return;
+        db.scenarios.splice(idx, 1);
+        save(); render(); Store.toast("Scenario deleted");
+      };
+    });
+  }
+
+  function loadScenario(id) {
+    const s = db.scenarios.find((x) => x.id === id);
+    if (!s) return;
+    FIELDS.forEach((f) => { if (s[f] != null && s[f] !== "") $(f).value = s[f]; });
+    db.inputs = readInputs(); save(); render();
+    Store.toast('Loaded "' + s.name + '"');
+  }
+
+  /* ---------- events ---------- */
+
+  // Restore persisted inputs into the form.
+  FIELDS.forEach((f) => { $(f).value = db.inputs[f] != null ? db.inputs[f] : DEFAULTS[f]; });
+
+  // Persist + recompute on every change.
+  FIELDS.forEach((f) => {
+    $(f).addEventListener("input", () => {
+      db.inputs = readInputs();
+      save();
+      // live re-render without re-reading scenarios list is fine (render handles both)
+      render();
+    });
+  });
+
+  $("saveBtn").addEventListener("click", () => {
+    const name = $("scName").value.trim() || ("Scenario " + (db.scenarios.length + 1));
+    const inp = readInputs();
+    const res = simulate(inp);
+    db.scenarios.push({
+      id: Store.uid(), name: name,
+      age: inp.age, balance: inp.balance, savings: inp.savings,
+      ret: inp.ret, inf: inp.inf, spending: inp.spending, swr: inp.swr,
+      fiNumber: Math.round(res.fi * 100) / 100,
+      years: res.achieved ? Math.round(res.years * 100) / 100 : "",
+      fiAge: res.achieved && res.years > 0 ? Math.round((inp.age + res.years) * 100) / 100 : "",
+      savedAt: Store.today()
+    });
+    save(); $("scName").value = ""; render();
+    Store.toast('Saved "' + name + '"');
+  });
+
+  $("expBtn").addEventListener("click", () => {
+    Store.exportCSV("fire-scenarios", db.scenarios, SC_COLS);
+  });
+
+  $("impBtn").addEventListener("click", () => {
+    Store.importCSV((objs) => {
+      let n = 0;
+      objs.forEach((o) => {
+        if (!o || (!o.name && !o.fiNumber && !o.balance)) return;
+        db.scenarios.push({
+          id: Store.uid(),
+          name: o.name || "Imported scenario",
+          age: numOr(o.age, DEFAULTS.age), balance: numOr(o.balance, DEFAULTS.balance),
+          savings: numOr(o.savings, DEFAULTS.savings), ret: numOr(o.ret, DEFAULTS.ret),
+          inf: numOr(o.inf, DEFAULTS.inf), spending: numOr(o.spending, DEFAULTS.spending),
+          swr: numOr(o.swr, DEFAULTS.swr),
+          fiNumber: numOr(o.fiNumber, ""), years: o.years === "" ? "" : numOr(o.years, ""),
+          fiAge: o.fiAge === "" ? "" : numOr(o.fiAge, ""),
+          savedAt: o.savedAt || Store.today()
+        });
+        n++;
+      });
+      save(); render();
+      Store.toast("Imported " + n + " scenario(s)");
+    });
+  });
+
+  $("clearBtn").addEventListener("click", () => {
+    if (!confirm("Clear all FIRE Calculator data (inputs and saved scenarios)?")) return;
+    Store.remove(NS);
+    db = { inputs: Object.assign({}, DEFAULTS), scenarios: [] };
+    FIELDS.forEach((f) => { $(f).value = DEFAULTS[f]; });
+    render();
+    Store.toast("All data cleared");
+  });
+
+  function numOr(v, dflt) {
+    if (v === "" || v == null) return dflt;
+    const n = parseFloat(v);
+    return isFinite(n) ? n : dflt;
+  }
+
+  render();
+})();
+</script>
+</body></html>

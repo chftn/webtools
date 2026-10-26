@@ -1,0 +1,719 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+<title>StrongLifts 5×5 Tracker — Workout &amp; Progression | Toolbox</title>
+<link rel="stylesheet" href="../../assets/css/base.css">
+<style>
+  /* tool-local styles */
+  .sets{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px;align-items:center}
+  .setbtn{width:38px;height:38px;border-radius:8px;border:1px solid var(--border);background:var(--panel);
+    color:var(--muted);font-weight:700;cursor:pointer;font-family:inherit;font-size:14px}
+  .setbtn:hover{border-color:var(--accent)}
+  .setbtn.ok{background:rgba(56,224,160,.18);border-color:var(--accent2);color:var(--accent2)}
+  .setbtn.fail{background:rgba(255,90,90,.15);border-color:var(--danger);color:var(--danger)}
+  .loglift{border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin:10px 0;
+    background:var(--panel2)}
+  .loglift .lh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .loglift .lh b{font-size:15px}
+  .smart{display:flex;gap:6px;flex-wrap:wrap}
+  .chartwrap svg{width:100%;height:auto;display:block}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:middle;margin-right:5px}
+  .liftline{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;padding:3px 0;font-size:13px}
+  .liftline .nm{min-width:120px;font-weight:600}
+  .mini{font-size:12px;color:var(--muted)}
+  .bigbadge{font-size:34px;font-weight:800;line-height:1}
+  .hint{margin-top:6px}
+</style>
+
+<meta name="description" content="Free StrongLifts 5×5 tracker: plan workouts A/B, log sets and weights and track your progression. Local-first, no account — data stays in your browser.">
+<meta name="keywords" content="stronglifts 5x5, 5x5 tracker, strength training log, barbell progression, workout A B, squat bench deadlift">
+<meta name="author" content="ATLAS / George">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#070b12">
+<link rel="canonical" href="https://chftn.github.io/webtools/tools/stronglifts-5x5/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Toolbox">
+<meta property="og:title" content="StrongLifts 5×5 Tracker — Workout &amp; Progression | Toolbox">
+<meta property="og:description" content="Free StrongLifts 5×5 tracker: plan workouts A/B, log sets and weights and track your progression. Local-first, no account — data stays in your browser.">
+<meta property="og:url" content="https://chftn.github.io/webtools/tools/stronglifts-5x5/">
+<meta property="og:locale" content="en_AU">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="StrongLifts 5×5 Tracker — Workout &amp; Progression | Toolbox">
+<meta name="twitter:description" content="Free StrongLifts 5×5 tracker: plan workouts A/B, log sets and weights and track your progression. Local-first, no account — data stays in your browser.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"StrongLifts 5\u00d75 Tracker \u2014 Workout & Progression | Toolbox","url":"https://chftn.github.io/webtools/tools/stronglifts-5x5/","description":"Free StrongLifts 5\u00d75 tracker: plan workouts A/B, log sets and weights and track your progression. Local-first, no account \u2014 data stays in your browser.","inLanguage":"en","isAccessibleForFree":true,"operatingSystem":"Any","browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"applicationCategory":"HealthApplication"}</script>
+</head>
+<body>
+<div class="topbar"><div class="inner"><span class="brand">⚙️ StrongLifts 5×5</span><span class="spacer"></span>
+<a class="back" href="../../index.html">← All tools</a></div></div>
+<div class="wrap" role="main">
+  <h1>StrongLifts 5×5</h1>
+  <p class="sub">Alternating A/B barbell programme with automatic progression, 3-strike deloads and a session log.</p>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid two" style="margin-top:16px">
+    <div class="card" id="nextCard"></div>
+    <div class="card" id="settingsCard"></div>
+  </div>
+
+  <h2>Log a session</h2>
+  <div class="card" id="logCard"></div>
+
+  <h2>Current working weights</h2>
+  <div class="tablewrap"><table id="weightsTable"></table></div>
+
+  <h2>Progression</h2>
+  <div class="card">
+    <label for="chartLift">Lift</label>
+    <select id="chartLift"></select>
+    <div class="chartwrap" id="chart" style="margin-top:14px"></div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--accent2)"></span>All sets completed (weight increases)</span>
+      <span><span class="dot" style="background:var(--danger)"></span>Failed sets (weight held)</span>
+      <span><span class="dot" style="background:var(--warn)"></span>Deload session</span>
+    </div>
+  </div>
+
+  <h2>History</h2>
+  <div id="history"></div>
+
+  <div class="actions">
+    <button class="btn" id="btnExport">⬇ Export CSV</button>
+    <button class="btn" id="btnImport">⬆ Import CSV</button>
+    <button class="btn" id="btnJson">⬇ Backup JSON</button>
+    <button class="btn" id="btnJsonIn">⬆ Restore JSON</button>
+    <button class="btn bad" id="btnClear">🗑 Clear data</button>
+  </div>
+  <p class="mini">CSV columns: <code>date,session,workout,lift,weight,series,ok,total</code> (<code>series</code> is the per-set 1/0 result). Import <em>merges</em> rows into the existing log.</p>
+
+  <footer>Data stays in this browser · <a href="../../index.html">Toolbox</a></footer>
+</div>
+<script src="../../assets/js/store.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------------------------------------------------------- config */
+  const NS = "stronglifts-5x5";            // one namespace for the whole tool
+
+  // The five barbell lifts. Deadlift is a single heavy set of 5.
+  const LIFTS = [
+    { id: "squat",    name: "Squat",           sets: 5, reps: 5 },
+    { id: "bench",    name: "Bench Press",     sets: 5, reps: 5 },
+    { id: "row",      name: "Barbell Row",     sets: 5, reps: 5 },
+    { id: "ohp",      name: "Overhead Press",  sets: 5, reps: 5 },
+    { id: "deadlift", name: "Deadlift",        sets: 1, reps: 5 }
+  ];
+  const LIFT = {}; LIFTS.forEach(l => { LIFT[l.id] = l; });
+
+  // Workout A / B as per the standard programme.
+  const WORKOUTS = { A: ["squat", "bench", "row"], B: ["squat", "ohp", "deadlift"] };
+  const WORKOUT_LABEL = {
+    A: "A — Squat, Bench Press, Barbell Row",
+    B: "B — Squat, Overhead Press, Deadlift"
+  };
+
+  const DEFAULT_START = {
+    kg: { squat: 20, bench: 20, row: 30, ohp: 20, deadlift: 40 },
+    lb: { squat: 45, bench: 45, row: 65, ohp: 45, deadlift: 95 }
+  };
+  const DEFAULT_INC = { kg: 2.5, lb: 5 };
+
+  const $ = id => document.getElementById(id);
+  const num = (v, d) => { const n = parseFloat(v); return isNaN(n) ? (d == null ? 0 : d) : n; };
+  const r2 = n => Math.round(n * 100) / 100;
+  const fmt = n => Store.num(n);                    // 62.5 -> "62.5", 60 -> "60"
+  const wfmt = n => fmt(n) + " " + S.unit;          // weight with unit suffix
+
+  /* ------------------------------------------------------------------ state */
+  function fresh() {
+    return {
+      unit: "kg",
+      inc: 2.5,
+      start: Object.assign({}, DEFAULT_START.kg),   // starting weights (edit-able)
+      lastWorkout: null,                             // "A" | "B" | null
+      seq: 0,                                        // stable ordering counter
+      sessions: []                                   // [{id,date,workout,seq,lifts:{id:{weight,sets:[]}}}]
+    };
+  }
+  let S = Store.get(NS, null);
+  if (!S || typeof S !== "object") S = fresh();
+  // Defensive normalisation (also covers older/partial payloads).
+  S = Object.assign(fresh(), S);
+  if (!S.start || typeof S.start !== "object") S.start = Object.assign({}, DEFAULT_START[S.unit] || DEFAULT_START.kg);
+  LIFTS.forEach(l => { if (typeof S.start[l.id] !== "number") S.start[l.id] = DEFAULT_START.kg[l.id]; });
+  if (!Array.isArray(S.sessions)) S.sessions = [];
+  S.inc = num(S.inc, DEFAULT_INC[S.unit]);
+  if (!DEFAULT_INC[S.unit] && S.unit !== "kg" && S.unit !== "lb") S.unit = "kg";
+
+  const save = () => Store.set(NS, S);
+
+  /* ----------------------------------------------------------------- replay */
+  /* Everything shown is derived: replay the log in date order to get the
+     current working weight, 3-strike fail counters and streak per lift.     */
+  function replay() {
+    const inc = S.inc > 0 ? S.inc : DEFAULT_INC[S.unit];
+    const w = {}, fail = {}, succ = {};
+    LIFTS.forEach(l => { w[l.id] = num(S.start[l.id]); fail[l.id] = 0; succ[l.id] = 0; });
+
+    const info = new Map();                       // session object -> per-lift result
+    for (const s of sorted()) {
+      const per = {};
+      for (const lid of WORKOUTS[s.workout] || []) {
+        const rec = s.lifts && s.lifts[lid];
+        if (!rec) continue;
+        const used = num(rec.weight, w[lid]);
+        const sets = Array.isArray(rec.sets) ? rec.sets : [];
+        const ok = sets.length > 0 && sets.every(Boolean);
+        let action = "hold", next = used;
+
+        if (ok) {
+          next = r2(used + inc); fail[lid] = 0; succ[lid] += 1; action = "increase";
+        } else {
+          succ[lid] = 0; fail[lid] += 1;
+          if (fail[lid] >= 3) { next = deload(used, inc); fail[lid] = 0; action = "deload"; }
+        }
+        w[lid] = next;
+        per[lid] = { used: used, ok: ok, action: action, next: next, sets: sets };
+      }
+      info.set(s, per);
+    }
+    return { w: w, fail: fail, succ: succ, info: info };
+  }
+
+  // −10% rounded to the nearest loadable increment, never below the empty bar.
+  function deload(w, inc) {
+    const bar = S.unit === "kg" ? 20 : 45;
+    const floor = Math.min(lightestStart(), bar, w);   // nothing goes below the lightest start / the bar
+    const target = Math.max(floor, Math.round((w * 0.9) / inc) * inc);
+    return r2(target);
+  }
+  // lowest configured starting weight (the deload floor for the programme)
+  function lightestStart() {
+    let min = Infinity;
+    LIFTS.forEach(l => { const v = num(S.start[l.id]); if (v < min) min = v; });
+    return min === Infinity ? 0 : min;
+  }
+
+  // Sessions in chronological order (ties keep insertion order via seq).
+  function sorted() {
+    return S.sessions.slice().sort((a, b) => {
+      if (a.date === b.date) return (a.seq || 0) - (b.seq || 0);
+      return a.date < b.date ? -1 : 1;
+    });
+  }
+
+  let R = replay();
+  const nextWorkout = () => (S.lastWorkout === "A" ? "B" : "A");
+
+  /* ------------------------------------------------------------- log form  */
+  let form = null;   // {date, workout, lifts:{id:{weight, sets:[null|true|false]}}}
+
+  function newForm(workout, date) {
+    const f = { date: date || Store.today(), workout: workout, lifts: {} };
+    (WORKOUTS[workout] || []).forEach(lid => {
+      const L = LIFT[lid];
+      f.lifts[lid] = { weight: R.w[lid], sets: new Array(L.sets).fill(null) };
+    });
+    return f;
+  }
+
+  /* ------------------------------------------------------------- rendering */
+  function renderKPIs() {
+    const ss = sorted();
+    const last = ss.length ? ss[ss.length - 1] : null;
+
+    // total tonnage = weight × sets × reps, summed
+    let vol = 0;
+    ss.forEach(s => {
+      const per = R.info.get(s) || {};
+      Object.keys(per).forEach(lid => {
+        vol += per[lid].used * per[lid].sets.length * (LIFT[lid] ? LIFT[lid].reps : 5);
+      });
+    });
+
+    let days = "—";
+    if (last) {
+      const ms = new Date(Store.today() + "T00:00:00") - new Date(last.date + "T00:00:00");
+      days = Math.max(0, Math.round(ms / 86400000)) + "d";
+    }
+
+    const nw = nextWorkout();
+    $("kpis").innerHTML =
+      kpi(nw + " <span class='muted' style='font-size:14px'>next</span>", "Next workout " + (S.lastWorkout ? "(after " + S.lastWorkout + ")" : "")) +
+      kpi(Store.num(ss.length), "Sessions logged") +
+      kpi(Store.num(vol), "Total volume (" + S.unit + ")") +
+      kpi(days, "Since last session");
+  }
+  const kpi = (v, l) => `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`;
+
+  function renderNext() {
+    const nw = nextWorkout();
+    let h = `<h3 style="margin-top:0">Up next</h3>
+      <div class="bigbadge">Workout ${nw}</div>
+      <p class="mini hint">${WORKOUT_LABEL[nw]}</p><div style="margin-top:12px">`;
+    (WORKOUTS[nw] || []).forEach(lid => {
+      const L = LIFT[lid];
+      h += `<div class="liftline"><span class="nm">${Store.esc(L.name)}</span>
+        <span class="pill">${L.sets}×${L.reps}</span>
+        <span class="pos"><b>${wfmt(R.w[lid])}</b></span>
+        <span class="mini">${R.fail[lid]}/3 fails${R.succ[lid] ? " · " + R.succ[lid] + " ✓ streak" : ""}</span></div>`;
+    });
+    h += `</div><p class="mini hint">Miss a lift three sessions in a row and it automatically deloads 10%.</p>`;
+    $("nextCard").innerHTML = h;
+  }
+
+  function renderSettings() {
+    let h = `<h3 style="margin-top:0">Settings</h3>
+      <div class="row">
+        <div><label for="setUnit">Units</label>
+          <select id="setUnit">
+            <option value="kg"${S.unit === "kg" ? " selected" : ""}>Kilograms (kg)</option>
+            <option value="lb"${S.unit === "lb" ? " selected" : ""}>Pounds (lb)</option>
+          </select></div>
+        <div><label for="setInc">Increment per success</label>
+          <input type="number" id="setInc" step="0.5" min="0.5" value="${S.inc}"></div>
+      </div>
+      <h3>Starting weights</h3>
+      <div class="row">`;
+    LIFTS.forEach(l => {
+      h += `<div><label for="start_${l.id}">${Store.esc(l.name)}</label>
+        <input type="number" id="start_${l.id}" step="0.5" min="0" value="${num(S.start[l.id])}"></div>`;
+    });
+    h += `</div><div class="actions" style="margin-bottom:0">
+        <button class="btn primary sm" id="btnSaveSettings">Save settings</button>
+      </div>
+      <p class="mini">Changing units converts every logged weight.</p>`;
+    $("settingsCard").innerHTML = h;
+
+    $("btnSaveSettings").addEventListener("click", applySettings);
+    $("setUnit").addEventListener("change", e => changeUnit(e.target.value));
+  }
+
+  function applySettings() {
+    const inc = num($("setInc").value, DEFAULT_INC[S.unit]);
+    if (inc <= 0) { Store.toast("Increment must be greater than 0"); return; }
+    S.inc = r2(inc);
+    let bad = false;
+    LIFTS.forEach(l => {
+      const v = parseFloat($("start_" + l.id).value);
+      if (isNaN(v) || v < 0) { bad = true; return; }
+      S.start[l.id] = r2(v);
+    });
+    if (bad) { Store.toast("Starting weights must be 0 or more"); return; }
+    save(); refresh();
+    Store.toast("Settings saved");
+  }
+
+  function changeUnit(nu) {
+    if (nu === S.unit) return;
+    const from = S.unit;
+    if (!confirm("Convert all logged weights and starting weights from " + from + " to " + nu + "?")) {
+      renderSettings();
+      return;
+    }
+    const f = nu === "kg" ? 0.45359237 : 2.20462262;
+    const round = x => nu === "kg" ? Math.round(x * 2) / 2 : Math.round(x);   // 0.5 kg / 1 lb
+    LIFTS.forEach(l => { S.start[l.id] = round(num(S.start[l.id]) * f); });
+    S.sessions.forEach(s => {
+      const lifts = s.lifts || {};
+      Object.keys(lifts).forEach(lid => {
+        if (lifts[lid] && lifts[lid].weight != null) lifts[lid].weight = round(num(lifts[lid].weight) * f);
+      });
+    });
+    S.unit = nu;
+    S.inc = DEFAULT_INC[nu];
+    save(); refresh();
+    Store.toast("Converted to " + nu + " · increment reset to " + DEFAULT_INC[nu]);
+  }
+
+  function renderWeights() {
+    let h = `<thead><tr><th>Lift</th><th>Scheme</th><th class="num">Working weight</th>
+      <th class="num">On success</th><th class="num">Fails</th><th class="num">✓ streak</th></tr></thead><tbody>`;
+    LIFTS.forEach(l => {
+      const fails = R.fail[l.id], succ = R.succ[l.id];
+      h += `<tr><td>${Store.esc(l.name)}</td><td class="muted">${l.sets}×${l.reps}</td>
+        <td class="num"><b>${wfmt(R.w[l.id])}</b></td>
+        <td class="num pos">${wfmt(r2(R.w[l.id] + S.inc))}</td>
+        <td class="num ${fails ? "neg" : "muted"}">${fails}/3</td>
+        <td class="num">${succ || "—"}</td></tr>`;
+    });
+    $("weightsTable").innerHTML = h + "</tbody>";
+  }
+
+  function renderLog() {
+    if (!form) form = newForm(nextWorkout(), Store.today());
+    let h = `<div class="row">
+      <div><label for="lgDate">Date</label><input type="date" id="lgDate" value="${form.date}"></div>
+      <div><label for="lgWorkout">Workout</label><select id="lgWorkout">
+        <option value="A"${form.workout === "A" ? " selected" : ""}>${WORKOUT_LABEL.A}</option>
+        <option value="B"${form.workout === "B" ? " selected" : ""}>${WORKOUT_LABEL.B}</option>
+      </select></div>
+    </div>`;
+
+    (WORKOUTS[form.workout] || []).forEach(lid => {
+      const L = LIFT[lid], f = form.lifts[lid];
+      if (!f) { f = form.lifts[lid] = { weight: R.w[lid], sets: new Array(L.sets).fill(null) }; }
+      const done = f.sets.filter(s => s !== null).length;
+      const allOk = f.sets.length > 0 && f.sets.every(s => s === true);
+      const anyFail = f.sets.some(s => s === false);
+      let outcome;
+      if (done < f.sets.length) outcome = `<span class="muted">${done}/${f.sets.length} sets marked</span>`;
+      else if (allOk) outcome = `<span class="pos">All sets ✓ → next session ${wfmt(r2(num(f.weight) + S.inc))}</span>`;
+      else if (R.fail[lid] + 1 >= 3) outcome = `<span class="neg">Fail 3 of 3 → deload to ${wfmt(deload(num(f.weight), S.inc))}</span>`;
+      else outcome = `<span class="neg">Set failed → hold at ${wfmt(num(f.weight))}</span>`;
+
+      h += `<div class="loglift">
+        <div class="lh"><b>${Store.esc(L.name)}</b>
+          <span class="pill">${L.sets}×${L.reps}</span>
+          <span class="spacer"></span>
+          <button class="btn sm" data-act="all-ok" data-lift="${lid}">All ✓</button>
+          <button class="btn sm" data-act="all-fail" data-lift="${lid}">All ✗</button>
+          <button class="btn sm" data-act="reset" data-lift="${lid}">Reset</button>
+        </div>
+        <div class="row" style="margin-top:4px">
+          <div style="max-width:170px"><label>Weight (${S.unit})</label>
+            <input type="number" step="0.5" min="0" data-act="w" data-lift="${lid}" value="${r2(num(f.weight))}"></div>
+          <div style="flex:2;min-width:200px"><label>Sets — tap to toggle ✓ / ✗</label>
+            <div class="sets">` +
+        f.sets.map((v, i) =>
+          `<button class="setbtn ${v === true ? "ok" : v === false ? "fail" : ""}" data-act="set"
+             data-lift="${lid}" data-i="${i}" title="Set ${i + 1}">${v === true ? "✓" : v === false ? "✗" : i + 1}</button>`
+        ).join("") +
+        `</div></div></div>
+        <div class="mini" style="margin-top:4px">${outcome}</div>
+      </div>`;
+    });
+
+    h += `<div class="actions" style="margin-bottom:0">
+      <button class="btn primary" id="btnSaveSession">Save session</button>
+      <button class="btn" id="btnClearForm">Clear form</button>
+    </div>`;
+    $("logCard").innerHTML = h;
+  }
+
+  function renderChart() {
+    const lid = $("chartLift").value || "squat";
+    const rows = [];
+    sorted().forEach(s => {
+      const per = R.info.get(s);
+      if (per && per[lid]) rows.push({ date: s.date, w: per[lid].used, ok: per[lid].ok, action: per[lid].action });
+    });
+    if (!rows.length) {
+      $("chart").innerHTML = `<div class="empty">No sessions logged for ${Store.esc(LIFT[lid].name)} yet.</div>`;
+      return;
+    }
+
+    const W = 600, H = 240, padL = 52, padR = 16, padT = 16, padB = 34;
+    const innerW = W - padL - padR, innerH = H - padT - padB;
+    const n = rows.length;
+    const X = i => padL + (n === 1 ? innerW / 2 : (i * innerW) / (n - 1));
+
+    let lo = Math.min.apply(null, rows.map(r => r.w));
+    let hi = Math.max.apply(null, rows.map(r => r.w));
+
+    // Snap the axis to real loadable steps so the gridlines read as weights (17.5, 20, 22.5 …)
+    const step = Math.max(niceStep(Math.max(hi - lo, S.inc * 2) / 4), S.inc);
+    const axisLo = Math.floor(lo / step) * step - step;
+    const axisHi = Math.ceil(hi / step) * step + step;
+    const Y = v => padT + innerH * (1 - (v - axisLo) / (axisHi - axisLo));
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Progression chart for ${Store.esc(LIFT[lid].name)}">`;
+
+    // horizontal gridlines + y labels
+    for (let v = axisLo; v <= axisHi + 1e-6; v += step) {
+      const y = Y(v);
+      svg += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}"
+        stroke="rgba(34,211,238,.28)" stroke-width="1"/>`;
+      svg += `<text x="${padL - 8}" y="${(y + 4).toFixed(1)}" fill="#5f7b8c" font-size="11"
+        text-anchor="end" font-family="inherit">${fmt(r2(v))}</text>`;
+    }
+
+    // the line itself
+    const pts = rows.map((r, i) => X(i).toFixed(1) + "," + Y(r.w).toFixed(1)).join(" ");
+    if (n > 1) svg += `<polyline points="${pts}" fill="none" stroke="#22d3ee" stroke-width="2.5"
+      stroke-linejoin="round" stroke-linecap="round"/>`;
+
+    // data points, coloured by outcome; deloads get an amber ring
+    rows.forEach((r, i) => {
+      const cx = X(i), cy = Y(r.w);
+      const col = r.action === "deload" ? "#f2b13a" : r.ok ? "#38e0a0" : "#ff5a5a";
+      svg += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${col}"
+        stroke="#070b12" stroke-width="1.5"><title>${r.date}: ${fmt(r.w)} ${S.unit} — ${
+        r.action === "deload" ? "deload" : r.ok ? "all sets ✓" : "failed"}</title></circle>`;
+    });
+
+    // x labels: first, middle, last
+    const idxs = n === 1 ? [0] : [0, Math.floor((n - 1) / 2), n - 1];
+    idxs.forEach(i => {
+      svg += `<text x="${X(i).toFixed(1)}" y="${H - 10}" fill="#5f7b8c" font-size="11"
+        text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}" font-family="inherit">${
+        rows[i].date.slice(5)}</text>`;
+    });
+
+    svg += `</svg>`;
+    $("chart").innerHTML = svg;
+  }
+
+  // Round a raw axis span up to a human-friendly step (1, 2, 2.5, 5 × 10ⁿ).
+  function niceStep(x) {
+    if (!(x > 0)) return 1;
+    const p = Math.pow(10, Math.floor(Math.log10(x)));
+    const c = x / p;
+    const m = c <= 1 ? 1 : c <= 2 ? 2 : c <= 2.5 ? 2.5 : c <= 5 ? 5 : 10;
+    return m * p;
+  }
+
+  function renderHistory() {
+    const ss = sorted().slice().reverse();   // newest first
+    if (!ss.length) {
+      $("history").innerHTML = `<div class="empty">No entries yet. Log your first session above.</div>`;
+      return;
+    }
+    let h = `<div class="tablewrap"><table><thead><tr><th>Date</th><th>Wk</th><th>Sets</th>
+      <th class="num">Volume (${S.unit})</th><th></th></tr></thead><tbody>`;
+    ss.forEach(s => {
+      const per = R.info.get(s) || {};
+      let vol = 0, cells = "";
+      (WORKOUTS[s.workout] || []).forEach(lid => {
+        const p = per[lid]; if (!p) return;
+        vol += p.used * p.sets.length * LIFT[lid].reps;
+        const tag = p.action === "deload" ? `<span class="neg">→ deload ${fmt(p.next)}</span>`
+          : p.action === "increase" ? `<span class="pos">✓ → ${fmt(p.next)}</span>`
+          : `<span class="neg">✗ hold ${fmt(p.next)}</span>`;
+        cells += `<div class="liftline"><span class="nm">${Store.esc(LIFT[lid].name)}</span>
+          <span class="muted">${p.sets.length}×${LIFT[lid].reps} @ ${fmt(p.used)}</span>${tag}</div>`;
+      });
+      h += `<tr><td>${Store.esc(s.date)}</td><td><span class="pill">${Store.esc(s.workout)}</span></td>
+        <td>${cells}</td><td class="num">${Store.num(r2(vol))}</td>
+        <td><button class="btn sm bad" data-del="${Store.esc(s.id)}">Delete</button></td></tr>`;
+    });
+    $("history").innerHTML = h + "</tbody></table></div>";
+
+    // delete buttons
+    Array.prototype.forEach.call($("history").querySelectorAll("[data-del]"), b => {
+      b.addEventListener("click", () => {
+        const id = b.getAttribute("data-del");
+        if (!confirm("Delete this session from the log? Weights will be recalculated.")) return;
+        S.sessions = S.sessions.filter(x => x.id !== id);
+        // keep lastWorkout coherent with the remaining log
+        const rest = sorted();
+        S.lastWorkout = rest.length ? rest[rest.length - 1].workout : null;
+        save(); form = null; refresh();
+        Store.toast("Session deleted");
+      });
+    });
+  }
+
+  function renderChartSelect() {
+    const sel = $("chartLift"), keep = sel.value;
+    sel.innerHTML = LIFTS.map(l => `<option value="${l.id}">${Store.esc(l.name)}</option>`).join("");
+    sel.value = keep && LIFT[keep] ? keep : "squat";
+  }
+
+  /* ------------------------------------------------------------- refresh   */
+  function refresh() {
+    R = replay();
+    renderKPIs();
+    renderNext();
+    renderWeights();
+    renderChartSelect();
+    renderChart();
+    renderHistory();
+    if (!form) form = newForm(nextWorkout(), Store.today());
+    renderLog();
+  }
+
+  /* -------------------------------------------------------------- handlers */
+  function saveSession() {
+    const date = $("lgDate").value || Store.today();
+    form.date = date;
+    const lifts = {};
+    let missing = null;
+
+    for (const lid of WORKOUTS[form.workout]) {
+      const f = form.lifts[lid];
+      const w = parseFloat($("logCard").querySelector('[data-act="w"][data-lift="' + lid + '"]').value);
+      if (isNaN(w) || w < 0) { Store.toast("Enter a weight for " + LIFT[lid].name); return; }
+      f.weight = r2(w);
+      if (f.sets.some(s => s === null)) { missing = LIFT[lid].name; break; }
+      lifts[lid] = { weight: f.weight, sets: f.sets.map(Boolean) };
+    }
+    if (missing) { Store.toast("Mark every set for " + missing + " as ✓ or ✗"); return; }
+
+    const s = { id: Store.uid(), date: date, workout: form.workout, seq: ++S.seq, lifts: lifts };
+    S.sessions.push(s);
+    S.lastWorkout = form.workout;
+    save();
+
+    // summarise what changed, after the replay has run
+    const per = replay().info.get(s) || {};
+    const bits = Object.keys(per).map(lid => {
+      const p = per[lid];
+      const sym = p.action === "deload" ? "⇩ deload" : p.action === "increase" ? "✓" : "✗";
+      return LIFT[lid].name + " " + sym + " " + fmt(p.next) + " " + S.unit;
+    });
+    form = null;
+    refresh();
+    Store.toast("Saved workout " + s.workout + " — " + bits.join(", "));
+  }
+
+  function onLogClick(e) {
+    const b = e.target.closest("button[data-act]");
+    if (!b) return;
+    const act = b.getAttribute("data-act");
+
+    if (act === "set") {
+      const lid = b.getAttribute("data-lift"), i = +b.getAttribute("data-i");
+      const sets = form.lifts[lid].sets;
+      sets[i] = sets[i] === null ? true : sets[i] === true ? false : null;   // null → ✓ → ✗ → null
+    } else if (act === "all-ok" || act === "all-fail" || act === "reset") {
+      const lid = b.getAttribute("data-lift");
+      const L = LIFT[lid];
+      form.lifts[lid].sets = new Array(L.sets).fill(act === "all-ok" ? true : act === "all-fail" ? false : null);
+    } else if (act === "w") {
+      return; // inputs handled separately
+    } else {
+      return;
+    }
+    renderLog();
+  }
+
+  function bindLog() {
+    $("logCard").addEventListener("click", onLogClick);
+    $("logCard").addEventListener("input", e => {
+      const inp = e.target;
+      if (inp.getAttribute("data-act") === "w") form.lifts[inp.getAttribute("data-lift")].weight = inp.value;
+      if (inp.id === "lgDate") form.date = inp.value;
+    });
+    $("logCard").addEventListener("change", e => {
+      if (e.target.id === "lgWorkout") {
+        form.workout = e.target.value;
+        form.lifts = {};
+        (WORKOUTS[form.workout] || []).forEach(lid =>
+          form.lifts[lid] = { weight: R.w[lid], sets: new Array(LIFT[lid].sets).fill(null) });
+        renderLog();
+      }
+    });
+    $("logCard").addEventListener("click", e => {
+      if (e.target.id === "btnSaveSession") saveSession();
+      if (e.target.id === "btnClearForm") { form = null; renderLog(); Store.toast("Form cleared"); }
+    });
+    $("chartLift").addEventListener("change", renderChart);
+  }
+
+  /* ------------------------------------------------------------ CSV/JSON   */
+  function exportRows() {
+    const out = [];
+    sorted().forEach(s => {
+      (WORKOUTS[s.workout] || []).forEach(lid => {
+        const rec = s.lifts && s.lifts[lid]; if (!rec) return;
+        const sets = Array.isArray(rec.sets) ? rec.sets : [];
+        const ok = sets.filter(Boolean).length;
+        out.push({
+          date: s.date,
+          session: s.seq,                    // keeps same-day sessions apart on re-import
+          workout: s.workout,
+          lift: lid,
+          weight: num(rec.weight),
+          series: sets.map(v => (v ? "1" : "0")).join(""),
+          ok: ok,
+          total: sets.length
+        });
+      });
+    });
+    return out;
+  }
+
+  function importRows(objs) {
+    // group the flat rows back into sessions: date + session no. + workout
+    const groups = {};
+    let used = 0;
+    objs.forEach(o => {
+      const date = String(o.date || "").slice(0, 10);
+      const workout = String(o.workout || "").trim().toUpperCase();
+      const lid = String(o.lift || "").trim().toLowerCase();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !WORKOUTS[workout] || !LIFT[lid]) return;
+
+      const series = String(o.series || "").trim();
+      let sets;
+      if (/^[01]+$/.test(series)) {
+        sets = series.split("").map(c => c === "1");
+      } else {
+        // tolerate a hand-made CSV: "ok" of "total" sets counted from the start
+        const total = num(o.total, LIFT[lid].sets), ok = num(o.ok, 0);
+        sets = [];
+        for (let i = 0; i < total; i++) sets.push(i < ok);
+      }
+      if (!sets.length) return;
+
+      // no session column (e.g. an external spreadsheet) -> one session per date+workout
+      const seqNo = /^\d+$/.test(String(o.session || "").trim()) ? parseInt(o.session, 10) : 0;
+      const key = date + "||" + workout + "||" + seqNo;
+      const g = groups[key] || (groups[key] = { date: date, workout: workout, order: seqNo, lifts: {} });
+      g.lifts[lid] = { weight: num(o.weight, 0), sets: sets };
+      used++;
+    });
+
+    const gs = Object.keys(groups).map(k => groups[k]);
+    gs.sort((a, b) => a.date === b.date ? a.order - b.order : (a.date < b.date ? -1 : 1));
+    gs.forEach(g => {
+      S.sessions.push({ id: Store.uid(), date: g.date, workout: g.workout, seq: ++S.seq, lifts: g.lifts });
+    });
+    if (gs.length) {
+      const rest = sorted();
+      S.lastWorkout = rest[rest.length - 1].workout;
+    }
+    save(); form = null; refresh();
+    return { sessions: gs.length, rows: used };
+  }
+
+  function bindActions() {
+    $("btnExport").addEventListener("click", () => {
+      const rows = exportRows();
+      if (!rows.length) { Store.toast("Nothing to export yet"); return; }
+      Store.exportCSV("stronglifts-5x5-log", rows, ["date", "session", "workout", "lift", "weight", "series", "ok", "total"]);
+    });
+
+    $("btnImport").addEventListener("click", () => {
+      Store.importCSV(objs => {
+        const r = importRows(objs);
+        Store.toast("Imported " + r.sessions + " session(s) from " + r.rows + " row(s)");
+      });
+    });
+
+    $("btnJson").addEventListener("click", () => Store.exportJSON("stronglifts-5x5-backup", S));
+
+    $("btnJsonIn").addEventListener("click", () => {
+      Store.importJSON(obj => {
+        if (!obj || typeof obj !== "object") { Store.toast("Not a valid backup file"); return; }
+        if (!Array.isArray(obj.sessions)) { Store.toast("Backup has no session log"); return; }
+        S = Object.assign(fresh(), obj);
+        if (!S.start || typeof S.start !== "object") S.start = Object.assign({}, DEFAULT_START[S.unit] || DEFAULT_START.kg);
+        LIFTS.forEach(l => { if (typeof S.start[l.id] !== "number") S.start[l.id] = DEFAULT_START.kg[l.id]; });
+        S.inc = num(S.inc, DEFAULT_INC[S.unit]);
+        S.seq = num(S.seq, S.sessions.length);
+        save(); form = null;
+        renderSettings(); refresh();
+        Store.toast("Backup restored");
+      });
+    });
+
+    $("btnClear").addEventListener("click", () => {
+      if (!confirm("Delete ALL StrongLifts data (log, weights, settings)? This cannot be undone.")) return;
+      Store.remove(NS);
+      S = fresh(); save(); form = null;
+      renderSettings(); refresh();
+      Store.toast("All data cleared");
+    });
+  }
+
+  /* ------------------------------------------------------------------- init */
+  renderSettings();
+  refresh();
+  bindLog();
+  bindActions();
+})();
+</script>
+</body></html>

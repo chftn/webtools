@@ -1,0 +1,654 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+<title>Bodyweight Workout Plan &amp; Tracker — Free | Toolbox</title>
+<link rel="stylesheet" href="../../assets/css/base.css">
+<meta name="description" content="Free bodyweight workout plan and tracker: build a routine, log workouts and follow progressions. Works offline — your data stays in your browser.">
+<meta name="keywords" content="bodyweight workout plan, bodyweight tracker, calisthenics routine, workout log, progressions, no equipment workout">
+<meta name="author" content="ATLAS / George">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#070b12">
+<link rel="canonical" href="https://chftn.github.io/webtools/tools/bodyweight/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Toolbox">
+<meta property="og:title" content="Bodyweight Workout Plan &amp; Tracker — Free | Toolbox">
+<meta property="og:description" content="Free bodyweight workout plan and tracker: build a routine, log workouts and follow progressions. Works offline — your data stays in your browser.">
+<meta property="og:url" content="https://chftn.github.io/webtools/tools/bodyweight/">
+<meta property="og:locale" content="en_AU">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Bodyweight Workout Plan &amp; Tracker — Free | Toolbox">
+<meta name="twitter:description" content="Free bodyweight workout plan and tracker: build a routine, log workouts and follow progressions. Works offline — your data stays in your browser.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Bodyweight Workout Plan & Tracker \u2014 Free | Toolbox","url":"https://chftn.github.io/webtools/tools/bodyweight/","description":"Free bodyweight workout plan and tracker: build a routine, log workouts and follow progressions. Works offline \u2014 your data stays in your browser.","inLanguage":"en","isAccessibleForFree":true,"operatingSystem":"Any","browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"applicationCategory":"HealthApplication"}</script>
+</head>
+<body>
+<div class="topbar"><div class="inner"><span class="brand">🏋️ Bodyweight Plan &amp; Tracker</span><span class="spacer"></span>
+<a class="back" href="../../index.html">← All tools</a></div></div>
+<div class="wrap" role="main">
+  <h1>Bodyweight Exercise Plan &amp; Tracker</h1>
+  <p class="sub">Progression-based exercise library, routine builder and workout log — all local to this browser.</p>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-tab="library">Library</div>
+    <div class="tab" data-tab="plan">Plan builder</div>
+    <div class="tab" data-tab="log">Workout log</div>
+    <div class="tab" data-tab="progress">Progress</div>
+  </div>
+
+  <div class="actions">
+    <button class="btn sm" id="expLog">⬇ Export log CSV</button>
+    <button class="btn sm" id="expRoutine">⬇ Export routine CSV</button>
+    <button class="btn sm" id="impLog">⬆ Import log CSV</button>
+    <button class="btn sm" id="impRoutine">⬆ Import routine CSV</button>
+    <button class="btn sm bad" id="clearAll">🗑 Clear data</button>
+  </div>
+
+  <!-- ================= LIBRARY ================= -->
+  <section id="tab-library">
+    <h2>Exercise library</h2>
+    <p class="sub">Every exercise lists its progressions from easiest to hardest. Log the level you actually did.</p>
+    <div class="grid cards" id="libCards"></div>
+
+    <h3>Add a custom exercise</h3>
+    <div class="card">
+      <div class="row">
+        <div><label for="exName">Name</label><input id="exName" placeholder="e.g. Ring row"></div>
+        <div><label for="exType">Measure</label>
+          <select id="exType"><option value="reps">Reps</option><option value="time">Time (seconds)</option></select>
+        </div>
+      </div>
+      <label for="exLevels">Progressions (comma separated, easiest → hardest)</label>
+      <input id="exLevels" placeholder="Assisted, Knee, Full">
+      <div class="actions"><button class="btn primary" id="addEx">Add exercise</button></div>
+    </div>
+  </section>
+
+  <!-- ================= PLAN ================= -->
+  <section id="tab-plan" class="hidden">
+    <h2>Plan builder</h2>
+    <p class="sub">Compose a routine from exercises and levels, then save it. Loading a routine pushes today's entries into the log.</p>
+
+    <div class="card">
+      <div class="row">
+        <div><label for="pEx">Exercise</label><select id="pEx"></select></div>
+        <div><label for="pLevel">Progression</label><select id="pLevel"></select></div>
+        <div><label for="pSets">Sets</label><input id="pSets" type="number" min="1" step="1" value="3"></div>
+        <div><label id="pTargetLabel" for="pTarget">Target reps</label><input id="pTarget" type="number" min="1" step="1" value="10"></div>
+      </div>
+      <div class="actions"><button class="btn" id="addItem">＋ Add to routine</button></div>
+      <div class="tablewrap"><table id="draftTable"></table></div>
+      <div class="row" style="margin-top:12px">
+        <div><label for="rName">Routine name</label><input id="rName" placeholder="e.g. Push day"></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn primary" id="saveRoutine" style="width:100%">Save routine</button></div>
+      </div>
+    </div>
+
+    <h3>Saved routines</h3>
+    <div id="routines"></div>
+  </section>
+
+  <!-- ================= LOG ================= -->
+  <section id="tab-log" class="hidden">
+    <h2>Workout log</h2>
+    <div class="card">
+      <div class="row">
+        <div><label for="lDate">Date</label><input id="lDate" type="date"></div>
+        <div><label for="lEx">Exercise</label><select id="lEx"></select></div>
+        <div><label for="lLevel">Progression</label><select id="lLevel"></select></div>
+      </div>
+      <div class="row">
+        <div><label for="lSets">Sets</label><input id="lSets" type="number" min="1" step="1" value="3"></div>
+        <div><label id="lTargetLabel" for="lTarget">Best reps (per set)</label><input id="lTarget" type="number" min="0" step="1" placeholder="10"></div>
+      </div>
+      <label for="lNotes">Notes</label><input id="lNotes" placeholder="Felt strong, +1 rep on last set…">
+      <div class="actions"><button class="btn primary" id="addLog">＋ Add entry</button></div>
+    </div>
+
+    <div class="row" style="margin-bottom:10px">
+      <div><label for="fFrom">From</label><input id="fFrom" type="date"></div>
+      <div><label for="fTo">To</label><input id="fTo" type="date"></div>
+      <div><label for="fEx">Exercise filter</label><select id="fEx"><option value="">All exercises</option></select></div>
+      <div><label for="fSearch">Search</label><input id="fSearch" placeholder="notes / level"></div>
+    </div>
+
+    <div class="tablewrap"><table id="logTable"></table></div>
+  </section>
+
+  <!-- ================= PROGRESS ================= -->
+  <section id="tab-progress" class="hidden">
+    <h2>Progress</h2>
+    <div class="kpis" id="progKpis"></div>
+    <h3>Best set per exercise</h3>
+    <div class="tablewrap"><table id="bestTable"></table></div>
+    <h3>Trend for one exercise</h3>
+    <div class="card">
+      <label for="cEx">Exercise</label><select id="cEx"></select>
+      <div id="chart" style="margin-top:12px"></div>
+      <p class="muted" id="chartNote" style="font-size:12px"></p>
+    </div>
+  </section>
+
+  <footer>Data stays in this browser · <a href="../../index.html">Toolbox</a></footer>
+</div>
+<script src="../../assets/js/store.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ------------------------------------------------------------------ state
+     One namespace for the whole tool: everything lives in a single object. */
+  var NS = "bodyweight";
+
+  // Default progression library (easiest → hardest).
+  var DEFAULT_LIB = [
+    { id: "pushup",   name: "Push-up",       type: "reps", levels: ["Incline", "Knee", "Full", "Decline", "Archer", "One-arm"] },
+    { id: "squat",    name: "Squat",         type: "reps", levels: ["Assisted", "Bodyweight", "Split", "Pistol"] },
+    { id: "pullup",   name: "Pull-up",       type: "reps", levels: ["Row", "Negative", "Band", "Full"] },
+    { id: "plank",    name: "Plank",         type: "time", levels: ["Knee", "Full", "Long-lever"] },
+    { id: "lunge",    name: "Lunge",         type: "reps", levels: ["Assisted", "Reverse", "Walking", "Bulgarian"] },
+    { id: "glute",    name: "Glute bridge",  type: "reps", levels: ["Floor", "Single-leg", "Weighted", "Hip thrust"] },
+    { id: "dip",      name: "Dip",           type: "reps", levels: ["Bench", "Assisted", "Full", "Weighted"] },
+    { id: "hollow",   name: "Hollow hold",   type: "time", levels: ["Tuck", "Full", "Rocking"] }
+  ];
+
+  var state = Store.get(NS, null);
+  if (!state || typeof state !== "object") state = {};
+  if (!Array.isArray(state.lib) || !state.lib.length) state.lib = JSON.parse(JSON.stringify(DEFAULT_LIB));
+  if (!Array.isArray(state.routines)) state.routines = [];
+  if (!Array.isArray(state.log)) state.log = [];
+
+  function save() { Store.set(NS, state); }
+
+  /* ------------------------------------------------------------------ utils */
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return Store.esc(s); }
+  function exById(id) {
+    for (var i = 0; i < state.lib.length; i++) if (state.lib[i].id === id) return state.lib[i];
+    return null;
+  }
+  function unitWord(ex) { return ex && ex.type === "time" ? "s" : "reps"; }
+  function metricOf(entry) {                       // the number that measures the entry
+    if (entry.time != null && entry.time !== "") return Number(entry.time);
+    if (entry.reps != null && entry.reps !== "") return Number(entry.reps);
+    return 0;
+  }
+  function metricLabel(entry) {
+    return (entry.time != null && entry.time !== "") ? Store.num(entry.time, 0) + " s"
+                                                     : Store.num(entry.reps, 0) + " reps";
+  }
+  function sortByDate(list) {
+    return list.slice().sort(function (a, b) {
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+    });
+  }
+
+  /* Fill a <select> with options; values/keys may be arrays or objects. */
+  function fillSelect(sel, items, valKey, labelKey, selected) {
+    sel.innerHTML = items.map(function (it) {
+      var v = valKey ? it[valKey] : it, l = labelKey ? it[labelKey] : it;
+      return '<option value="' + esc(v) + '"' + (String(v) === String(selected) ? " selected" : "") + ">" + esc(l) + "</option>";
+    }).join("");
+  }
+
+  /* ------------------------------------------------------------------ tabs */
+  var TABS = ["library", "plan", "log", "progress"];
+  function showTab(name) {
+    TABS.forEach(function (t) { $("tab-" + t).classList.toggle("hidden", t !== name); });
+    Array.prototype.forEach.call(document.querySelectorAll("#tabs .tab"), function (el) {
+      el.classList.toggle("active", el.getAttribute("data-tab") === name);
+    });
+    if (name === "progress") renderProgress();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("#tabs .tab"), function (el) {
+    el.onclick = function () { showTab(el.getAttribute("data-tab")); };
+  });
+
+  /* ------------------------------------------------------------------ library */
+  function renderLibrary() {
+    var host = $("libCards");
+    if (!state.lib.length) { host.innerHTML = '<div class="empty">No exercises yet.</div>'; return; }
+    host.innerHTML = state.lib.map(function (ex) {
+      var lv = ex.levels.map(function (l, i) {
+        return '<span class="pill" title="Level ' + (i + 1) + '">' + esc(l) + "</span>";
+      }).join(" ");
+      var used = state.log.filter(function (e) { return e.exId === ex.id; }).length;
+      return '<div class="card"><div class="t" style="font-weight:650">' + esc(ex.name) +
+        ' <span class="pill">' + (ex.type === "time" ? "time" : "reps") + "</span></div>" +
+        '<div class="muted" style="font-size:12px;margin:6px 0 8px">' + used + " logged entr" + (used === 1 ? "y" : "ies") + "</div>" +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">' + lv + "</div>" +
+        '<div class="actions" style="margin:12px 0 0"><button class="btn sm bad" data-del="' + esc(ex.id) + '">Delete</button></div></div>';
+    }).join("");
+    Array.prototype.forEach.call(host.querySelectorAll("[data-del]"), function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute("data-del"), ex = exById(id);
+        if (!confirm('Remove "' + (ex ? ex.name : id) + '" from the library? Log entries are kept.')) return;
+        state.lib = state.lib.filter(function (x) { return x.id !== id; });
+        save(); renderLibrary(); renderPickers(); renderProgress();
+        Store.toast("Exercise removed");
+      };
+    });
+  }
+
+  /* Refresh every exercise-dependent control, keeping current selections. */
+  function renderPickers() {
+    var exOpts = state.lib.map(function (e) { return { id: e.id, name: e.name }; });
+    fillSelect($("pEx"), exOpts, "id", "name", $("pEx").value);
+    if (!$("pEx").value && exOpts.length) $("pEx").value = exOpts[0].id;
+    fillSelect($("lEx"), exOpts, "id", "name", $("lEx").value);
+    if (!$("lEx").value && exOpts.length) $("lEx").value = exOpts[0].id;
+
+    var c = $("cEx"), prevC = c.value;
+    fillSelect(c, exOpts, "id", "name", prevC);
+
+    var f = $("fEx");
+    f.innerHTML = '<option value="">All exercises</option>' + exOpts.map(function (o) {
+      return '<option value="' + esc(o.id) + '">' + esc(o.name) + "</option>";
+    }).join("");
+    if (f.getAttribute("data-keep")) f.value = f.getAttribute("data-keep") || "";
+
+    syncLevels("pEx", "pLevel", "pTargetLabel");
+    syncLevels("lEx", "lLevel", "lTargetLabel");
+  }
+
+  /* Level select + target label follow the chosen exercise. */
+  function syncLevels(exSel, lvSel, labelId) {
+    var ex = exById($(exSel).value);
+    fillSelect($(lvSel), ex ? ex.levels : [], null, null, $(lvSel).value);
+    if (ex) $(labelId).textContent = ex.type === "time" ? "Target time (seconds)" : "Target reps";
+    if (exSel === "lEx" && ex) {
+      $("lTargetLabel").textContent = ex.type === "time" ? "Best time (seconds)" : "Best reps (per set)";
+      $("lTarget").placeholder = ex.type === "time" ? "45" : "10";
+    }
+    if (exSel === "pEx" && ex) $("pTarget").value = ex.type === "time" ? 30 : 10;
+  }
+
+  $("pEx").onchange = function () { $("pLevel").innerHTML = ""; syncLevels("pEx", "pLevel", "pTargetLabel"); };
+  $("lEx").onchange = function () { $("lLevel").innerHTML = ""; syncLevels("lEx", "lLevel", "lTargetLabel"); };
+
+  $("addEx").onclick = function () {
+    var name = $("exName").value.trim(), type = $("exType").value;
+    var levels = $("exLevels").value.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+    if (!name) { Store.toast("Give the exercise a name"); return; }
+    if (!levels.length) levels = [name];
+    var id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || Store.uid();
+    if (exById(id)) id = id + "-" + Store.uid().slice(0, 3);
+    state.lib.push({ id: id, name: name, type: type, levels: levels });
+    save();
+    $("exName").value = ""; $("exLevels").value = "";
+    renderLibrary(); renderPickers(); renderProgress();
+    Store.toast("Added " + name);
+  };
+
+  /* ------------------------------------------------------------------ plan builder */
+  var draft = [];                     // in-memory routine being built
+
+  function renderDraft() {
+    var t = $("draftTable");
+    if (!draft.length) { t.innerHTML = '<tr><td class="empty">No items in this routine yet.</td></tr>'; return; }
+    t.innerHTML = "<thead><tr><th>Exercise</th><th>Progression</th><th class='num'>Sets</th><th class='num'>Target</th><th></th></tr></thead><tbody>" +
+      draft.map(function (it, i) {
+        var ex = exById(it.exId);
+        return "<tr><td>" + esc(ex ? ex.name : it.exName) + "</td><td>" + esc(it.level) +
+          "</td><td class='num'>" + Store.num(it.sets, 0) + "</td><td class='num'>" + Store.num(it.target, 0) +
+          " " + unitWord(ex) + "</td><td><button class='btn sm bad' data-rm='" + i + "'>Delete</button></td></tr>";
+      }).join("") + "</tbody>";
+    Array.prototype.forEach.call(t.querySelectorAll("[data-rm]"), function (b) {
+      b.onclick = function () { draft.splice(Number(b.getAttribute("data-rm")), 1); renderDraft(); };
+    });
+  }
+
+  $("addItem").onclick = function () {
+    var ex = exById($("pEx").value);
+    if (!ex) { Store.toast("Add an exercise first"); return; }
+    var sets = Math.max(1, Number($("pSets").value) || 1);
+    var target = Math.max(1, Number($("pTarget").value) || 1);
+    draft.push({ exId: ex.id, exName: ex.name, level: $("pLevel").value, sets: sets, target: target });
+    renderDraft();
+    Store.toast("Added to routine");
+  };
+
+  $("saveRoutine").onclick = function () {
+    var name = $("rName").value.trim();
+    if (!draft.length) { Store.toast("The routine is empty"); return; }
+    if (!name) { Store.toast("Name the routine"); return; }
+    state.routines.push({ id: Store.uid(), name: name, items: draft.slice(), created: Store.today() });
+    draft = []; $("rName").value = "";
+    save(); renderDraft(); renderRoutines();
+    Store.toast("Routine saved");
+  };
+
+  function renderRoutines() {
+    var host = $("routines");
+    if (!state.routines.length) { host.innerHTML = '<div class="empty">No routines saved yet.</div>'; return; }
+    host.innerHTML = state.routines.map(function (r) {
+      var rows = r.items.map(function (it) {
+        var ex = exById(it.exId);
+        return "<tr><td>" + esc(ex ? ex.name : it.exName) + "</td><td>" + esc(it.level) +
+          "</td><td class='num'>" + Store.num(it.sets, 0) + "</td><td class='num'>" + Store.num(it.target, 0) +
+          " " + unitWord(ex) + "</td></tr>";
+      }).join("");
+      return '<div class="card" style="margin-bottom:14px"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+        '<strong>' + esc(r.name) + '</strong><span class="pill">saved ' + esc(r.created || "") + "</span><span class=\"spacer\" style=\"flex:1\"></span>" +
+        '<button class="btn sm primary" data-start="' + esc(r.id) + '">▶ Load into log</button>' +
+        '<button class="btn sm" data-edit="' + esc(r.id) + '">✎ Edit</button>' +
+        '<button class="btn sm bad" data-drop="' + esc(r.id) + '">🗑</button></div>' +
+        '<div class="tablewrap" style="margin-top:10px"><table><thead><tr><th>Exercise</th><th>Progression</th>' +
+        "<th class='num'>Sets</th><th class='num'>Target</th></tr></thead><tbody>" + rows + "</tbody></table></div></div>";
+    }).join("");
+
+    Array.prototype.forEach.call(host.querySelectorAll("[data-start]"), function (b) {
+      b.onclick = function () { startRoutine(b.getAttribute("data-start")); };
+    });
+    Array.prototype.forEach.call(host.querySelectorAll("[data-edit]"), function (b) {
+      b.onclick = function () {
+        var r = state.routines.filter(function (x) { return x.id === b.getAttribute("data-edit"); })[0];
+        if (!r) return;
+        draft = r.items.slice(); $("rName").value = r.name;
+        renderDraft(); Store.toast("Loaded into the builder — save to keep changes");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      };
+    });
+    Array.prototype.forEach.call(host.querySelectorAll("[data-drop]"), function (b) {
+      b.onclick = function () {
+        if (!confirm("Delete this routine?")) return;
+        state.routines = state.routines.filter(function (x) { return x.id !== b.getAttribute("data-drop"); });
+        save(); renderRoutines(); Store.toast("Routine deleted");
+      };
+    });
+  }
+
+  /* Push a routine's items into today's log as pending entries. */
+  function startRoutine(id) {
+    var r = state.routines.filter(function (x) { return x.id === id; })[0];
+    if (!r) return;
+    var date = Store.today();
+    r.items.forEach(function (it) {
+      var ex = exById(it.exId);
+      var entry = {
+        id: Store.uid(), date: date, exId: it.exId, exName: it.exName,
+        level: it.level, sets: it.sets, reps: null, time: null, notes: "from " + r.name, done: false
+      };
+      if (ex && ex.type === "time") entry.time = it.target; else entry.reps = it.target;
+      state.log.push(entry);
+    });
+    save();
+    $("lDate").value = date;
+    renderLog(); renderProgress(); showTab("log");
+    Store.toast("Added " + r.items.length + " entr" + (r.items.length === 1 ? "y" : "ies") + " to today");
+  }
+
+  /* ------------------------------------------------------------------ log */
+  function renderLog() {
+    var from = $("fFrom").value, to = $("fTo").value, fex = $("fEx").value, q = $("fSearch").value.toLowerCase();
+    var rows = state.log.filter(function (e) {
+      if (from && e.date < from) return false;
+      if (to && e.date > to) return false;
+      if (fex && e.exId !== fex) return false;
+      if (q && (String(e.notes || "") + " " + String(e.level || "")).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    }).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
+
+    var t = $("logTable");
+    if (!rows.length) {
+      t.innerHTML = '<tr><td class="empty">No entries yet' + (state.log.length ? " matching these filters." : ".") + "</td></tr>";
+      return;
+    }
+    t.innerHTML = "<thead><tr><th>Date</th><th>Exercise</th><th>Progression</th><th class='num'>Sets</th>" +
+      "<th class='num'>Best</th><th>Notes</th><th>Done</th><th></th></tr></thead><tbody>" +
+      rows.map(function (e) {
+        var ex = exById(e.exId);
+        return "<tr><td>" + esc(e.date) + "</td><td>" + esc(e.exName || (ex ? ex.name : "—")) +
+          "</td><td>" + esc(e.level) + "</td><td class='num'>" + Store.num(e.sets, 0) + "</td><td class='num'>" +
+          esc(metricLabel(e)) + "</td><td>" + (e.notes ? esc(e.notes) : '<span class="muted">—</span>') + "</td>" +
+          "<td><input type='checkbox' data-done='" + esc(e.id) + "'" + (e.done ? " checked" : "") + "></td>" +
+          "<td><button class='btn sm bad' data-del='" + esc(e.id) + "'>Delete</button></td></tr>";
+      }).join("") + "</tbody>";
+
+    Array.prototype.forEach.call(t.querySelectorAll("[data-done]"), function (c) {
+      c.onchange = function () {
+        var id = c.getAttribute("data-done");
+        state.log.forEach(function (e) { if (e.id === id) e.done = c.checked; });
+        save(); renderProgress();
+        var e2 = state.log.filter(function (x) { return x.id === id; })[0];
+        Store.toast(c.checked ? "Marked complete" : "Marked pending");
+      };
+    });
+    Array.prototype.forEach.call(t.querySelectorAll("[data-del]"), function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute("data-del");
+        if (!confirm("Delete this log entry?")) return;
+        state.log = state.log.filter(function (e) { return e.id !== id; });
+        save(); renderLog(); renderProgress(); Store.toast("Entry deleted");
+      };
+    });
+  }
+
+  $("addLog").onclick = function () {
+    var ex = exById($("lEx").value);
+    if (!ex) { Store.toast("No exercise selected"); return; }
+    var date = $("lDate").value || Store.today();
+    var sets = Math.max(1, Number($("lSets").value) || 1);
+    var target = $("lTarget").value;
+    var entry = {
+      id: Store.uid(), date: date, exId: ex.id, exName: ex.name, level: $("lLevel").value,
+      sets: sets, reps: null, time: null, notes: $("lNotes").value.trim(), done: false
+    };
+    if (ex.type === "time") entry.time = target === "" ? null : Number(target);
+    else entry.reps = target === "" ? null : Number(target);
+    state.log.push(entry);
+    save();
+    $("lNotes").value = "";
+    renderLog(); renderProgress();
+    Store.toast("Logged " + ex.name);
+  };
+
+  ["fFrom", "fTo", "fEx", "fSearch"].forEach(function (id) {
+    $(id).oninput = $(id).onchange = function () {
+      if (id === "fEx") $("fEx").setAttribute("data-keep", $("fEx").value);
+      renderLog();
+    };
+  });
+
+  /* ------------------------------------------------------------------ progress */
+  function bestPerExercise() {
+    var best = {};   // exId -> {value, date, level, sets, type}
+    state.log.forEach(function (e) {
+      var v = metricOf(e);
+      if (!v) return;
+      var b = best[e.exId];
+      if (!b || v > b.value) {
+        best[e.exId] = { value: v, date: e.date, level: e.level, sets: e.sets,
+                         type: (e.time != null && e.time !== "") ? "time" : "reps" };
+      }
+    });
+    return best;
+  }
+
+  /* Hand-rolled inline SVG line chart. */
+  function chartSVG(series, unit) {
+    if (!series.length) return '<div class="empty">No entries with a value yet.</div>';
+    var W = 700, H = 260, pad = { l: 46, r: 14, t: 16, b: 36 };
+    var iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+    var ys = series.map(function (s) { return s.y; });
+    var minY = Math.min.apply(null, ys), maxY = Math.max.apply(null, ys);
+    if (minY === maxY) { minY = Math.max(0, minY - 1); maxY = maxY + 1; }
+    else { var p = (maxY - minY) * 0.12; minY = Math.max(0, minY - p); maxY = maxY + p; }
+    function X(i) { return series.length === 1 ? pad.l + iw / 2 : pad.l + iw * i / (series.length - 1); }
+    function Y(v) { return pad.t + ih - ih * (v - minY) / (maxY - minY); }
+
+    var svg = '<svg viewBox="0 0 ' + W + " " + H + '" style="width:100%;height:auto;display:block" role="img" aria-label="Progress chart">';
+    for (var k = 0; k <= 4; k++) {                                  // horizontal gridlines + y labels
+      var v = minY + (maxY - minY) * k / 4, yy = Y(v);
+      svg += '<line x1="' + pad.l + '" y1="' + yy.toFixed(1) + '" x2="' + (W - pad.r) + '" y2="' + yy.toFixed(1) +
+             '" stroke="var(--border)" stroke-width="1"/>' +
+             '<text x="' + (pad.l - 6) + '" y="' + (yy + 4).toFixed(1) + '" text-anchor="end" fill="var(--muted)" font-size="10">' +
+             Store.num(v, 0) + "</text>";
+    }
+    var d = series.map(function (s, i) { return (i ? "L" : "M") + X(i).toFixed(1) + "," + Y(s.y).toFixed(1); }).join(" ");
+    svg += '<path d="' + d + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>';
+    series.forEach(function (s, i) {                               // points with native tooltips
+      svg += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(s.y).toFixed(1) + '" r="3.5" fill="var(--accent2)">' +
+             "<title>" + esc(s.x + ": " + Store.num(s.y, 0) + " " + unit) + "</title></circle>";
+    });
+    var step = Math.max(1, Math.ceil(series.length / 6));          // thin x labels so they never collide
+    series.forEach(function (s, i) {
+      if (i % step && i !== series.length - 1) return;
+      svg += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" fill="var(--muted)" font-size="10">' +
+             esc(s.x.slice(5)) + "</text>";
+    });
+    svg += '<line x1="' + pad.l + '" y1="' + (pad.t + ih) + '" x2="' + (W - pad.r) + '" y2="' + (pad.t + ih) +
+           '" stroke="var(--border)" stroke-width="1"/></svg>';
+    return svg;
+  }
+
+  function renderProgress() {
+    var doneN = state.log.filter(function (e) { return e.done; }).length;
+    var exN = {}; state.log.forEach(function (e) { exN[e.exId] = 1; });
+    var dates = {}; state.log.forEach(function (e) { dates[e.date] = 1; });
+    $("progKpis").innerHTML =
+      kpi(state.log.length, "Log entries") + kpi(doneN, "Completed") +
+      kpi(Object.keys(exN).length, "Exercises used") + kpi(Object.keys(dates).length, "Training days");
+
+    var best = bestPerExercise(), t = $("bestTable");
+    var rows = Object.keys(best).map(function (id) {
+      var ex = exById(id), b = best[id];
+      return { name: ex ? ex.name : id, level: b.level, value: b.value, unit: b.type === "time" ? "s" : "reps",
+               sets: b.sets, date: b.date };
+    }).sort(function (a, b) { return b.value - a.value; });
+    t.innerHTML = rows.length
+      ? "<thead><tr><th>Exercise</th><th>Best progression</th><th class='num'>Best</th><th class='num'>Sets</th><th>Achieved</th></tr></thead><tbody>" +
+        rows.map(function (r) {
+          return "<tr><td>" + esc(r.name) + "</td><td>" + esc(r.level) + "</td><td class='num'>" +
+            Store.num(r.value, 0) + " " + esc(r.unit) + "</td><td class='num'>" + Store.num(r.sets, 0) +
+            "</td><td>" + esc(r.date) + "</td></tr>";
+        }).join("") + "</tbody>"
+      : '<tr><td class="empty">No entries yet.</td></tr>';
+
+    renderChart();
+  }
+  function kpi(v, l) { return '<div class="kpi"><div class="v">' + esc(v) + '</div><div class="l">' + esc(l) + "</div></div>"; }
+
+  function renderChart() {
+    var id = $("cEx").value;
+    var ex = exById(id);
+    var series = {};
+    state.log.forEach(function (e) {
+      if (e.exId !== id || !e.done) return;                     // chart completed work only
+      var v = metricOf(e);
+      if (!v) return;
+      if (!series[e.date] || v > series[e.date]) series[e.date] = v;
+    });
+    var pts = sortByDate(Object.keys(series).map(function (d) { return { x: d, y: series[d] }; }));
+    $("chart").innerHTML = chartSVG(pts, ex && ex.type === "time" ? "s" : "reps");
+    $("chartNote").textContent = pts.length
+      ? "Best " + (ex && ex.type === "time" ? "hold" : "set") + " per training day (" + pts.length + " day" + (pts.length === 1 ? "" : "s") + "), completed entries only."
+      : "No completed entries for this exercise yet.";
+  }
+  $("cEx").onchange = renderChart;
+
+  /* ------------------------------------------------------------------ CSV */
+  var LOG_COLS = ["date", "exercise", "progression", "sets", "reps", "time_seconds", "notes", "done"];
+
+  $("expLog").onclick = function () {
+    if (!state.log.length) { Store.toast("Nothing to export"); return; }
+    var rows = sortByDate(state.log).map(function (e) {
+      var ex = exById(e.exId);
+      return {
+        date: e.date, exercise: e.exName || (ex ? ex.name : ""), progression: e.level,
+        sets: e.sets, reps: e.reps == null ? "" : e.reps, time_seconds: e.time == null ? "" : e.time,
+        notes: e.notes || "", done: e.done ? "yes" : "no"
+      };
+    });
+    Store.exportCSV("bodyweight-log", rows, LOG_COLS);
+  };
+
+  $("expRoutine").onclick = function () {
+    if (!state.routines.length) { Store.toast("No routines to export"); return; }
+    var rows = [];
+    state.routines.forEach(function (r) {
+      r.items.forEach(function (it) {
+        var ex = exById(it.exId);
+        rows.push({ routine: r.name, exercise: ex ? ex.name : it.exName, progression: it.level,
+                    sets: it.sets, target: it.target, unit: ex && ex.type === "time" ? "time" : "reps" });
+      });
+    });
+    Store.exportCSV("bodyweight-routines", rows, ["routine", "exercise", "progression", "sets", "target", "unit"]);
+  };
+
+  /* Resolve an exercise by name for imports; create it if unknown. */
+  function resolveEx(name, unitHint, levelHint) {
+    var found = null;
+    state.lib.forEach(function (e) { if (e.name.toLowerCase() === String(name).toLowerCase()) found = e; });
+    if (!found) {
+      var id = String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || Store.uid();
+      found = { id: id, name: name, type: unitHint === "time" ? "time" : "reps", levels: [] };
+      state.lib.push(found);
+    }
+    if (levelHint && found.levels.indexOf(levelHint) < 0) found.levels.push(levelHint);
+    return found;
+  }
+
+  $("impLog").onclick = function () {
+    Store.importCSV(function (objs) {
+      var added = 0;
+      objs.forEach(function (o) {
+        var name = (o.exercise || o.exercise_name || "").trim();
+        if (!name) return;
+        var level = (o.progression || o.level || "Full").trim();
+        var time = o.time_seconds !== "" && o.time_seconds != null ? Number(o.time_seconds) : null;
+        var ex = resolveEx(name, time != null ? "time" : "reps", level);
+        state.log.push({
+          id: Store.uid(), date: (o.date || Store.today()).trim() || Store.today(), exId: ex.id, exName: ex.name,
+          level: level, sets: Number(o.sets) || 1,
+          reps: time != null ? null : (o.reps === "" || o.reps == null ? null : Number(o.reps)),
+          time: time, notes: (o.notes || "").trim(),
+          done: /^(yes|true|1|y)$/i.test(String(o.done || "").trim())
+        });
+        added++;
+      });
+      save(); renderLibrary(); renderPickers(); renderLog(); renderProgress();
+      Store.toast("Imported " + added + " log row(s)");
+    });
+  };
+
+  $("impRoutine").onclick = function () {
+    Store.importCSV(function (objs) {
+      var groups = {};
+      objs.forEach(function (o) {
+        var rn = (o.routine || o.name || "Imported").trim() || "Imported";
+        var name = (o.exercise || "").trim();
+        if (!name) return;
+        var unit = (o.unit || "reps").trim().toLowerCase();
+        var ex = resolveEx(name, unit === "time" ? "time" : "reps", (o.progression || "").trim());
+        (groups[rn] = groups[rn] || []).push({
+          exId: ex.id, exName: ex.name, level: (o.progression || "").trim() || ex.levels[0] || "",
+          sets: Number(o.sets) || 1, target: Number(o.target) || 1
+        });
+      });
+      var n = 0;
+      Object.keys(groups).forEach(function (rn) {
+        state.routines.push({ id: Store.uid(), name: rn, items: groups[rn], created: Store.today() });
+        n++;
+      });
+      save(); renderLibrary(); renderPickers(); renderRoutines(); renderProgress();
+      Store.toast("Imported " + n + " routine(s)");
+    });
+  };
+
+  /* ------------------------------------------------------------------ clear */
+  $("clearAll").onclick = function () {
+    if (!confirm("Delete ALL library edits, routines and log entries from this browser? This cannot be undone.")) return;
+    Store.remove(NS);
+    state = { lib: JSON.parse(JSON.stringify(DEFAULT_LIB)), routines: [], log: [] };
+    save();
+    draft = [];
+    renderLibrary(); renderPickers(); renderDraft(); renderRoutines(); renderLog(); renderProgress();
+    Store.toast("All data cleared");
+  };
+
+  /* ------------------------------------------------------------------ init */
+  $("lDate").value = Store.today();
+  renderLibrary(); renderPickers(); renderDraft(); renderRoutines(); renderLog(); renderProgress();
+})();
+</script>
+</body></html>

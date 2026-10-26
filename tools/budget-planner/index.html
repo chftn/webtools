@@ -1,0 +1,631 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+<title>Budget Planner — Free Local-First Budget Tool | Toolbox</title>
+<link rel="stylesheet" href="../../assets/css/base.css">
+<meta name="description" content="Free local-first budget planner: track income and expenses by category, plan a monthly calendar, and export or import your budget as CSV. No account or sign-up — all data stays in your browser.">
+<meta name="keywords" content="budget planner, monthly budget, income expenses, expense categories, budgeting calendar, CSV export, offline budget">
+<meta name="author" content="ATLAS / George">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#070b12">
+<link rel="canonical" href="https://chftn.github.io/webtools/tools/budget-planner/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Toolbox">
+<meta property="og:title" content="Budget Planner — Free Local-First Budget Tool | Toolbox">
+<meta property="og:description" content="Free local-first budget planner: track income and expenses by category, plan a monthly calendar, and export or import your budget as CSV. No account or sign-up — all data stays in your browser.">
+<meta property="og:url" content="https://chftn.github.io/webtools/tools/budget-planner/">
+<meta property="og:locale" content="en_AU">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Budget Planner — Free Local-First Budget Tool | Toolbox">
+<meta name="twitter:description" content="Free local-first budget planner: track income and expenses by category, plan a monthly calendar, and export or import your budget as CSV. No account or sign-up — all data stays in your browser.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Budget Planner \u2014 Free Local-First Budget Tool | Toolbox","url":"https://chftn.github.io/webtools/tools/budget-planner/","description":"Free local-first budget planner: track income and expenses by category, plan a monthly calendar, and export or import your budget as CSV. No account or sign-up \u2014 all data stays in your browser.","inLanguage":"en","isAccessibleForFree":true,"operatingSystem":"Any","browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"applicationCategory":"FinanceApplication"}</script>
+</head>
+<body>
+<div class="topbar"><div class="inner"><span class="brand">📊 Budget Planner</span><span class="spacer"></span>
+<a class="back" href="../../index.html">← All tools</a></div></div>
+<div class="wrap" role="main">
+  <h1>Budget Planner</h1><p class="sub">Log income and expenses, track your savings rate, and watch monthly category targets.</p>
+
+  <!-- ---------- add / edit transaction ---------- -->
+  <div class="card">
+    <h2 id="formTitle" style="margin-top:0">Add transaction</h2>
+    <form id="txForm" autocomplete="off">
+      <div class="row">
+        <div><label for="fDate">Date</label><input type="date" id="fDate" required></div>
+        <div><label for="fType">Type</label>
+          <select id="fType"><option value="expense">Expense</option><option value="income">Income</option></select>
+        </div>
+        <div><label for="fAmount">Amount</label>
+          <input type="number" id="fAmount" step="0.01" min="0.01" inputmode="decimal" placeholder="0.00" required>
+        </div>
+      </div>
+      <div class="row">
+        <div><label for="fCat">Category</label>
+          <input id="fCat" list="catList" maxlength="40" placeholder="e.g. Groceries" required>
+        </div>
+        <div><label for="fDesc">Description (optional)</label>
+          <input id="fDesc" maxlength="80" placeholder="e.g. Weekly shop">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" type="submit" id="saveBtn">Add transaction</button>
+        <button class="btn hidden" type="button" id="cancelEdit">Cancel edit</button>
+      </div>
+    </form>
+    <datalist id="catList"></datalist>
+  </div>
+
+  <!-- ---------- filters ---------- -->
+  <div class="card" style="margin-top:14px">
+    <h3 style="margin-top:0">Filters</h3>
+    <div class="row">
+      <div><label for="fMonth">Month</label><select id="fMonth"></select></div>
+      <div><label for="fTypeF">Type</label>
+        <select id="fTypeF">
+          <option value="all">All types</option>
+          <option value="income">Income only</option>
+          <option value="expense">Expenses only</option>
+        </select>
+      </div>
+      <div><label for="fCatF">Category</label><select id="fCatF"></select></div>
+      <div><label for="fSearch">Search</label><input id="fSearch" placeholder="category or description" maxlength="60"></div>
+    </div>
+    <div class="actions" style="margin-bottom:0">
+      <span id="scopeNote" class="pill"></span>
+      <button class="btn sm" type="button" id="resetFilters">Reset filters</button>
+      <button class="btn sm hidden" type="button" id="clearDay">Clear day filter ✕</button>
+    </div>
+  </div>
+
+  <!-- ---------- KPIs ---------- -->
+  <h2>Summary <span id="kpiScope" class="muted" style="font-size:14px;font-weight:400"></span></h2>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid two" style="margin-top:18px">
+    <!-- ---------- category breakdown ---------- -->
+    <div class="card">
+      <h2 style="margin-top:0">Spending by category</h2>
+      <div id="breakdown"></div>
+    </div>
+    <!-- ---------- budget targets ---------- -->
+    <div class="card">
+      <h2 style="margin-top:0">Monthly targets</h2>
+      <p class="sub" id="budgetScope" style="margin-bottom:10px"></p>
+      <div id="budgetList"></div>
+      <h3>Add / update a target</h3>
+      <div class="row">
+        <div><label for="bCat">Category</label><input id="bCat" list="catList" maxlength="40" placeholder="e.g. Groceries"></div>
+        <div><label for="bAmt">Monthly limit</label><input type="number" id="bAmt" step="0.01" min="0" inputmode="decimal" placeholder="0.00"></div>
+      </div>
+      <div class="actions"><button class="btn sm" type="button" id="bAdd">Save target</button></div>
+    </div>
+  </div>
+
+  <!-- ---------- calendar ---------- -->
+  <div class="card" style="margin-top:14px">
+    <div class="row" style="align-items:center;justify-content:space-between">
+      <h2 id="calTitle" style="margin:0">Calendar</h2>
+      <div class="row" style="flex:0 0 auto;gap:8px">
+        <button class="btn sm" type="button" id="calPrev">←</button>
+        <button class="btn sm" type="button" id="calToday">This month</button>
+        <button class="btn sm" type="button" id="calNext">→</button>
+      </div>
+    </div>
+    <p class="sub" style="margin:10px 0">Green shades = net positive day, red shades = net negative day. Click a day to filter the list and pre-fill the date.</p>
+    <div id="calGrid"></div>
+  </div>
+
+  <!-- ---------- transactions ---------- -->
+  <h2>Transactions <span id="txCount" class="muted" style="font-size:14px;font-weight:400"></span></h2>
+  <div class="tablewrap"><table id="txTable"><thead><tr>
+    <th>Date</th><th>Type</th><th>Category</th><th>Description</th><th class="num">Amount</th><th></th>
+  </tr></thead><tbody id="txBody"></tbody></table></div>
+
+  <div class="actions">
+    <button class="btn" type="button" id="expAll">⬇ Export CSV</button>
+    <button class="btn" type="button" id="expFiltered">⬇ Export filtered</button>
+    <button class="btn" type="button" id="expBudgets">⬇ Export targets</button>
+    <button class="btn" type="button" id="impBtn">⬆ Import CSV</button>
+    <button class="btn bad" type="button" id="clearBtn">🗑 Clear data</button>
+  </div>
+
+  <footer>Data stays in this browser · <a href="../../index.html">Toolbox</a></footer>
+</div>
+<script src="../../assets/js/store.js"></script>
+<script>
+(function () {
+  "use strict";
+  var NS = "budget-planner";
+
+  /* ---------------- state ---------------- */
+  var DEFAULT_CATS = ["Salary","Freelance","Groceries","Rent","Utilities","Transport",
+                      "Dining","Health","Entertainment","Insurance","Savings","Other"];
+
+  var state = Store.get(NS, null);
+  if (!state || typeof state !== "object") state = { tx: [], budgets: {} };
+  if (!Array.isArray(state.tx)) state.tx = [];
+  if (!state.budgets || typeof state.budgets !== "object") state.budgets = {};
+  // normalise older rows so every transaction has the expected shape
+  state.tx = state.tx.map(function (t) {
+    return {
+      id: t.id || Store.uid(),
+      date: /^\d{4}-\d{2}-\d{2}$/.test(t.date) ? t.date : Store.today(),
+      type: t.type === "income" ? "income" : "expense",
+      category: String(t.category || "Uncategorised").slice(0, 40),
+      desc: String(t.desc || "").slice(0, 80),
+      amount: Math.abs(Number(t.amount) || 0)
+    };
+  });
+
+  var filters = { month: "all", type: "all", category: "all", q: "", day: null };
+  var calMonth = Store.today().slice(0, 7); // calendar always shows a full month
+  var editId = null;
+
+  function save() { Store.set(NS, state); }
+  function $(id) { return document.getElementById(id); }
+  function monthKey(d) { return d.slice(0, 7); }
+  function monthLabel(key) {
+    var p = key.split("-");
+    return new Date(+p[0], +p[1] - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  }
+  function dayLabel(iso) {
+    var p = iso.split("-");
+    return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString(undefined,
+      { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  }
+  function shiftMonth(key, delta) {
+    var p = key.split("-"), d = new Date(+p[0], +p[1] - 1 + delta, 1);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+  }
+  function sum(list) { return list.reduce(function (a, t) { return a + t.amount; }, 0); }
+  function pct(n) { return Store.num(n, 1) + "%"; }
+
+  /* ---------------- filtering ---------------- */
+  function matches(t) {
+    if (filters.type !== "all" && t.type !== filters.type) return false;
+    if (filters.category !== "all" && t.category !== filters.category) return false;
+    // an explicit day selection supersedes the month filter (so it never fights the calendar)
+    if (filters.day) { if (t.date !== filters.day) return false; }
+    else if (filters.month !== "all" && monthKey(t.date) !== filters.month) return false;
+    if (filters.q) {
+      var hay = (t.category + " " + t.desc).toLowerCase();
+      if (hay.indexOf(filters.q.toLowerCase()) === -1) return false;
+    }
+    return true;
+  }
+  function filtered() { return state.tx.filter(matches); }
+  function categories() {
+    var seen = {}, out = [];
+    state.tx.forEach(function (t) { if (!seen[t.category]) { seen[t.category] = 1; out.push(t.category); } });
+    return out.sort(function (a, b) { return a.localeCompare(b); });
+  }
+  /* budgets are monthly targets, so they are measured against one concrete month */
+  function budgetMonth() { return filters.month === "all" ? calMonth : filters.month; }
+
+  /* ---------------- rendering ---------------- */
+  function renderScopeNote() {
+    var bits = [];
+    if (filters.day) bits.push(dayLabel(filters.day));
+    else bits.push(filters.month === "all" ? "All time" : monthLabel(filters.month));
+    if (filters.type !== "all") bits.push(filters.type);
+    if (filters.category !== "all") bits.push(filters.category);
+    if (filters.q) bits.push('"' + filters.q + '"');
+    $("scopeNote").textContent = "Showing: " + bits.join(" · ");
+    $("clearDay").classList.toggle("hidden", !filters.day);
+  }
+
+  function renderKpis(list) {
+    var inc = sum(list.filter(function (t) { return t.type === "income"; }));
+    var exp = sum(list.filter(function (t) { return t.type === "expense"; }));
+    var net = inc - exp;
+    var rate = inc > 0 ? (net / inc) * 100 : 0;
+    $("kpiScope").textContent = filters.month === "all" ? "· all time" : "· " + monthLabel(filters.month);
+    $("kpis").innerHTML =
+      kpi(Store.money(inc), "Total income") +
+      kpi(Store.money(exp), "Total expenses") +
+      kpi('<span class="' + (net >= 0 ? "pos" : "neg") + '">' + Store.money(net) + "</span>", "Net") +
+      kpi('<span class="' + (rate >= 0 ? "pos" : "neg") + '">' + pct(rate) + "</span>", "Savings rate");
+  }
+  function kpi(v, l) {
+    return '<div class="kpi"><div class="v">' + v + '</div><div class="l">' + l + "</div></div>";
+  }
+
+  function renderBreakdown(list) {
+    var by = {};
+    list.filter(function (t) { return t.type === "expense"; }).forEach(function (t) {
+      by[t.category] = (by[t.category] || 0) + t.amount;
+    });
+    var rows = Object.keys(by).map(function (c) { return { c: c, v: by[c] }; })
+      .sort(function (a, b) { return b.v - a.v; });
+    var total = rows.reduce(function (a, r) { return a + r.v; }, 0);
+    var max = rows.length ? rows[0].v : 0;
+    $("breakdown").innerHTML = rows.length ? rows.map(function (r) {
+      var w = max > 0 ? Math.max(2, (r.v / max) * 100) : 0;
+      return '<div style="margin-bottom:10px">' +
+        '<div style="display:flex;justify-content:space-between;font-size:13px;gap:8px">' +
+        "<span>" + Store.esc(r.c) + "</span>" +
+        '<span class="muted">' + Store.money(r.v) + " · " + Store.num(total ? (r.v / total) * 100 : 0, 0) + "%</span></div>" +
+        '<div class="bar" style="margin-top:4px"><span style="width:' + w + '%"></span></div></div>';
+    }).join("") : '<div class="empty">No expenses in this view.</div>';
+  }
+
+  function renderBudgets() {
+    var key = budgetMonth();
+    $("budgetScope").textContent = "Measured against " + monthLabel(key) + " spending.";
+    var spend = {};
+    state.tx.forEach(function (t) {
+      if (t.type === "expense" && monthKey(t.date) === key) spend[t.category] = (spend[t.category] || 0) + t.amount;
+    });
+    var seen = {}, cats = [];
+    Object.keys(state.budgets).forEach(function (c) { if (!seen[c]) { seen[c] = 1; cats.push(c); } });
+    Object.keys(spend).forEach(function (c) { if (!seen[c]) { seen[c] = 1; cats.push(c); } });
+    cats.sort(function (a, b) { return a.localeCompare(b); });
+
+    if (!cats.length) {
+      $("budgetList").innerHTML = '<div class="empty">No targets yet — add one below.</div>';
+      return;
+    }
+    $("budgetList").innerHTML = cats.map(function (c) {
+      var target = Number(state.budgets[c]) || 0;
+      var sp = spend[c] || 0;
+      var hasTarget = state.budgets[c] != null && target > 0;
+      var over = hasTarget && sp > target;
+      var p = hasTarget ? Math.min(100, (sp / target) * 100) : (sp > 0 ? 100 : 0);
+      var colour = !hasTarget ? "var(--accent)" : (over ? "var(--danger)" : "var(--accent2)");
+      var right;
+      if (hasTarget) {
+        var diff = target - sp;
+        right = diff >= 0
+          ? '<span class="pos">' + Store.money(diff) + " left</span>"
+          : '<span class="neg">' + Store.money(-diff) + " over</span>";
+      } else {
+        right = '<span class="muted">no target</span>';
+      }
+      return '<div style="margin-bottom:10px">' +
+        '<div style="display:flex;justify-content:space-between;font-size:13px;gap:8px">' +
+        "<span>" + Store.esc(c) + '</span><span class="muted">' + Store.money(sp) +
+        (hasTarget ? " / " + Store.money(target) : "") + "</span></div>" +
+        '<div class="bar" style="margin-top:4px"><span style="width:' + p + "%;background:" + colour + '"></span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px">' +
+        right +
+        '<span style="display:flex;gap:6px;align-items:center">' +
+        '<input type="number" class="btarget" data-cat="' + Store.esc(c) + '" min="0" step="0.01" value="' +
+        (state.budgets[c] != null ? store_num_attr(state.budgets[c]) : "") +
+        '" aria-label="Monthly target for ' + Store.esc(c) + '" style="width:110px;padding:6px 8px;font-size:13px">' +
+        '<button class="btn sm bdel" type="button" data-cat="' + Store.esc(c) + '" title="Remove target">✕</button>' +
+        "</span></div></div>";
+    }).join("");
+  }
+  function store_num_attr(n) { return String(Number(n) || 0); }
+
+  function renderCalendar() {
+    var p = calMonth.split("-"), y = +p[0], m = +p[1];
+    $("calTitle").textContent = monthLabel(calMonth);
+    var inc = {}, exp = {};
+    state.tx.forEach(function (t) {
+      if (monthKey(t.date) !== calMonth) return;
+      var bucket = t.type === "income" ? inc : exp;
+      bucket[t.date] = (bucket[t.date] || 0) + t.amount;
+    });
+    var days = new Date(y, m, 0).getDate();
+    var offset = (new Date(y, m - 1, 1).getDay() + 6) % 7; // Monday-first
+    var maxAbs = 0;
+    for (var d = 1; d <= days; d++) {
+      var iso = calMonth + "-" + String(d).padStart(2, "0");
+      maxAbs = Math.max(maxAbs, Math.abs((inc[iso] || 0) - (exp[iso] || 0)));
+    }
+    var html = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+      .map(function (h) { return '<div class="h">' + h + "</div>"; }).join("");
+    for (var i = 0; i < offset; i++) html += "<div></div>";
+    var today = Store.today();
+    for (var d2 = 1; d2 <= days; d2++) {
+      var iso2 = calMonth + "-" + String(d2).padStart(2, "0");
+      var net = (inc[iso2] || 0) - (exp[iso2] || 0);
+      var touched = (inc[iso2] || 0) > 0 || (exp[iso2] || 0) > 0;
+      var cls = "d" + (touched ? " has" : "") + (iso2 === today ? " today" : "");
+      var st = "";
+      if (touched) {
+        var ratio = maxAbs > 0 ? Math.abs(net) / maxAbs : 0;
+        var a = (0.10 + 0.45 * ratio).toFixed(2);
+        var rgb = net >= 0 ? "34,197,94" : "239,68,68";
+        st = "background:rgba(" + rgb + "," + a + ");border:1px solid rgba(" + rgb + ",.75)";
+      } else if (filters.day === iso2) {
+        st = "border:1px solid var(--accent)";
+      }
+      var title = dayLabel(iso2);
+      if (touched) title += " — in " + Store.money(inc[iso2] || 0) + ", out " + Store.money(exp[iso2] || 0) + ", net " + Store.money(net);
+      html += '<div class="' + cls + '" data-day="' + iso2 + '" style="' + st + '" title="' + Store.esc(title) + '">' + d2 + "</div>";
+    }
+    $("calGrid").innerHTML = '<div class="cal">' + html + "</div>";
+  }
+
+  function renderTable(list) {
+    var sorted = list.slice().sort(function (a, b) {
+      return a.date < b.date ? 1 : a.date > b.date ? -1 : 0;
+    });
+    $("txCount").textContent = sorted.length ? "· " + sorted.length + " shown" : "";
+    if (!sorted.length) {
+      var msg = state.tx.length ? "No transactions match the current filters." : "No transactions yet. Add your first one above.";
+      $("txBody").innerHTML = '<tr><td colspan="6"><div class="empty">' + msg + "</div></td></tr>";
+      return;
+    }
+    // group by month when several months are on screen, otherwise by day
+    var byMonth = filters.month === "all" && !filters.day;
+    var groups = [], map = {};
+    sorted.forEach(function (t) {
+      var g = byMonth ? monthKey(t.date) : t.date;
+      if (!map[g]) { map[g] = []; groups.push(g); }
+      map[g].push(t);
+    });
+    var rows = "";
+    groups.forEach(function (g) {
+      var items = map[g];
+      var inc = sum(items.filter(function (t) { return t.type === "income"; }));
+      var exp = sum(items.filter(function (t) { return t.type === "expense"; }));
+      var net = inc - exp;
+      rows += '<tr><td colspan="6" style="background:var(--panel2)"><strong>' +
+        (byMonth ? monthLabel(g) : dayLabel(g)) + "</strong> <span class=\"muted\">in " + Store.money(inc) +
+        " · out " + Store.money(exp) + ' · net <span class="' + (net >= 0 ? "pos" : "neg") + '">' +
+        Store.money(net) + "</span></span></td></tr>";
+      items.forEach(function (t) {
+        var sign = t.type === "income" ? "+" : "−";
+        rows += "<tr>" +
+          "<td>" + Store.esc(t.date) + "</td>" +
+          '<td><span class="pill">' + (t.type === "income" ? "income" : "expense") + "</span></td>" +
+          "<td>" + Store.esc(t.category) + "</td>" +
+          "<td>" + (t.desc ? Store.esc(t.desc) : '<span class="muted">—</span>') + "</td>" +
+          '<td class="num ' + (t.type === "income" ? "pos" : "neg") + '">' + sign + Store.money(t.amount) + "</td>" +
+          '<td style="white-space:nowrap;text-align:right">' +
+          '<button class="btn sm tedit" type="button" data-id="' + t.id + '">Edit</button> ' +
+          '<button class="btn sm bad tdel" type="button" data-id="' + t.id + '">Delete</button></td></tr>';
+      });
+    });
+    $("txBody").innerHTML = rows;
+  }
+
+  function renderOptions() {
+    // month filter: every month that has data, plus the current month
+    var mset = { };
+    state.tx.forEach(function (t) { mset[monthKey(t.date)] = 1; });
+    mset[Store.today().slice(0, 7)] = 1;
+    mset[calMonth] = 1;
+    var months = Object.keys(mset).sort().reverse();
+    if (filters.month !== "all" && months.indexOf(filters.month) === -1) filters.month = "all";
+    $("fMonth").innerHTML = '<option value="all">All time</option>' + months.map(function (k) {
+      return '<option value="' + k + '">' + monthLabel(k) + "</option>";
+    }).join("");
+    $("fMonth").value = filters.month;
+
+    // category filter
+    var cats = categories();
+    if (filters.category !== "all" && cats.indexOf(filters.category) === -1) filters.category = "all";
+    $("fCatF").innerHTML = '<option value="all">All categories</option>' + cats.map(function (c) {
+      return '<option value="' + Store.esc(c) + '">' + Store.esc(c) + "</option>";
+    }).join("");
+    $("fCatF").value = filters.category;
+
+    // datalist = known categories + common defaults (suggestions only, never seeded data)
+    var all = cats.concat(DEFAULT_CATS.filter(function (c) { return cats.indexOf(c) === -1; }));
+    $("catList").innerHTML = all.map(function (c) { return '<option value="' + Store.esc(c) + '"></option>'; }).join("");
+  }
+
+  function render() {
+    renderOptions();
+    renderScopeNote();
+    var list = filtered();
+    renderKpis(list);
+    renderBreakdown(list);
+    renderBudgets();
+    renderCalendar();
+    renderTable(list);
+  }
+
+  /* ---------------- events ---------------- */
+  $("txForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var amount = Math.abs(Number($("fAmount").value));
+    var category = $("fCat").value.trim();
+    if (!category) { Store.toast("Please enter a category."); return; }
+    if (!amount || amount <= 0) { Store.toast("Please enter an amount greater than zero."); return; }
+    var row = {
+      date: $("fDate").value || Store.today(),
+      type: $("fType").value === "income" ? "income" : "expense",
+      category: category.slice(0, 40),
+      desc: $("fDesc").value.trim().slice(0, 80),
+      amount: Math.round(amount * 100) / 100
+    };
+    if (editId) {
+      var t = state.tx.find(function (x) { return x.id === editId; });
+      if (t) { row.id = t.id; Object.assign(t, row); }
+      Store.toast("Transaction updated.");
+      stopEdit();
+    } else {
+      row.id = Store.uid();
+      state.tx.push(row);
+      Store.toast("Transaction added.");
+    }
+    save();
+    $("fAmount").value = ""; $("fDesc").value = "";
+    render();
+  });
+
+  function startEdit(t) {
+    editId = t.id;
+    $("fDate").value = t.date;
+    $("fType").value = t.type;
+    $("fAmount").value = store_num_attr(t.amount);
+    $("fCat").value = t.category;
+    $("fDesc").value = t.desc;
+    $("formTitle").textContent = "Edit transaction";
+    $("saveBtn").textContent = "Save changes";
+    $("cancelEdit").classList.remove("hidden");
+    $("txForm").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  function stopEdit() {
+    editId = null;
+    $("formTitle").textContent = "Add transaction";
+    $("saveBtn").textContent = "Add transaction";
+    $("cancelEdit").classList.add("hidden");
+    $("fAmount").value = ""; $("fDesc").value = "";
+  }
+  $("cancelEdit").addEventListener("click", stopEdit);
+
+  // table actions (delegated)
+  $("txBody").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    var id = b.getAttribute("data-id");
+    var t = state.tx.find(function (x) { return x.id === id; });
+    if (!t) return;
+    if (b.classList.contains("tedit")) startEdit(t);
+    else if (b.classList.contains("tdel")) {
+      if (!confirm("Delete this transaction (" + t.category + " · " + Store.money(t.amount) + ")?")) return;
+      state.tx = state.tx.filter(function (x) { return x.id !== id; });
+      if (editId === id) stopEdit();
+      save(); render(); Store.toast("Transaction deleted.");
+    }
+  });
+
+  $("fMonth").addEventListener("change", function () {
+    filters.month = this.value;
+    if (filters.month !== "all") calMonth = filters.month; // keep calendar in step with the filter
+    render();
+  });
+  $("fTypeF").addEventListener("change", function () { filters.type = this.value; render(); });
+  $("fCatF").addEventListener("change", function () { filters.category = this.value; render(); });
+  $("fSearch").addEventListener("input", function () { filters.q = this.value.trim(); render(); });
+  $("resetFilters").addEventListener("click", function () {
+    filters = { month: "all", type: "all", category: "all", q: "", day: null };
+    $("fTypeF").value = "all"; $("fSearch").value = "";
+    render(); Store.toast("Filters reset.");
+  });
+  $("clearDay").addEventListener("click", function () { filters.day = null; render(); });
+
+  // calendar
+  $("calPrev").addEventListener("click", function () { calMonth = shiftMonth(calMonth, -1); render(); });
+  $("calNext").addEventListener("click", function () { calMonth = shiftMonth(calMonth, 1); render(); });
+  $("calToday").addEventListener("click", function () { calMonth = Store.today().slice(0, 7); render(); });
+  $("calGrid").addEventListener("click", function (e) {
+    var cell = e.target.closest(".d");
+    if (!cell) return;
+    var day = cell.getAttribute("data-day");
+    filters.day = (filters.day === day) ? null : day;       // click again to clear
+    $("fDate").value = day;                                 // pre-fill the form for a quick add
+    render();
+    if (filters.day) Store.toast("Filtered to " + dayLabel(day));
+  });
+
+  // budgets
+  $("bAdd").addEventListener("click", function () {
+    var c = $("bCat").value.trim();
+    var v = Number($("bAmt").value);
+    if (!c) { Store.toast("Enter a category for the target."); return; }
+    if (!v || v <= 0) { Store.toast("Enter a monthly limit above zero."); return; }
+    state.budgets[c] = Math.round(v * 100) / 100;
+    save(); $("bCat").value = ""; $("bAmt").value = "";
+    render(); Store.toast("Target saved for " + c + ".");
+  });
+  $("budgetList").addEventListener("change", function (e) {
+    var inp = e.target.closest("input.btarget");
+    if (!inp) return;
+    var c = inp.getAttribute("data-cat");
+    var raw = inp.value.trim();
+    if (raw === "" || Number(raw) <= 0) delete state.budgets[c];
+    else state.budgets[c] = Math.round(Number(raw) * 100) / 100;
+    save(); render();
+  });
+  $("budgetList").addEventListener("click", function (e) {
+    var b = e.target.closest("button.bdel");
+    if (!b) return;
+    var c = b.getAttribute("data-cat");
+    if (!confirm("Remove the monthly target for " + c + "?")) return;
+    delete state.budgets[c];
+    save(); render(); Store.toast("Target removed.");
+  });
+
+  // data actions
+  $("expAll").addEventListener("click", function () { exportTx(state.tx, "budget-transactions"); });
+  $("expFiltered").addEventListener("click", function () {
+    var rows = filtered();
+    if (!rows.length) { Store.toast("Nothing to export in this view."); return; }
+    exportTx(rows, "budget-transactions-filtered");
+  });
+  function exportTx(rows, name) {
+    if (!rows.length) { Store.toast("No transactions to export yet."); return; }
+    var out = rows.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(function (t) {
+      return { date: t.date, type: t.type, category: t.category, description: t.desc, amount: t.amount };
+    });
+    Store.exportCSV(name, out, ["date", "type", "category", "description", "amount"]);
+  }
+  $("expBudgets").addEventListener("click", function () {
+    var rows = Object.keys(state.budgets).sort().map(function (c) {
+      return { category: c, target: state.budgets[c] };
+    });
+    if (!rows.length) { Store.toast("No targets to export yet."); return; }
+    Store.exportCSV("budget-targets", rows, ["category", "target"]);
+  });
+
+  // one import button handles both transaction and target CSVs (auto-detected by header)
+  $("impBtn").addEventListener("click", function () {
+    Store.importCSV(function (objs) {
+      if (!objs.length) return;
+      var keysOf = function (o) { return Object.keys(o).map(function (k) { return k.trim().toLowerCase(); }); };
+      var isBudgets = objs.some(function (o) {
+        var k = keysOf(o);
+        return k.indexOf("target") !== -1 || k.indexOf("budget") !== -1 || k.indexOf("monthly_budget") !== -1;
+      });
+      var added = 0;
+      if (isBudgets) {
+        objs.forEach(function (o) {
+          var o2 = lowerKeys(o);
+          var c = String(o2.category || o2.name || "").trim();
+          var v = Math.abs(Number(o2.target != null ? o2.target : o2.budget != null ? o2.budget : o2.monthly_budget) || 0);
+          if (c && v > 0) { state.budgets[c.slice(0, 40)] = Math.round(v * 100) / 100; added++; }
+        });
+        save(); render();
+        Store.toast("Imported " + added + " target(s).");
+      } else {
+        objs.forEach(function (o) {
+          var o2 = lowerKeys(o);
+          var amt = Math.abs(Number(o2.amount) || 0);
+          if (!amt) return;
+          var date = String(o2.date || "").trim();
+          state.tx.push({
+            id: Store.uid(),
+            date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : Store.today(),
+            type: String(o2.type || "").trim().toLowerCase() === "income" ? "income" : "expense",
+            category: String(o2.category || "Uncategorised").trim().slice(0, 40) || "Uncategorised",
+            desc: String(o2.description || o2.desc || o2.note || "").trim().slice(0, 80),
+            amount: Math.round(amt * 100) / 100
+          });
+          added++;
+        });
+        save(); render();
+        Store.toast("Imported " + added + " transaction(s).");
+      }
+    });
+  });
+
+  function lowerKeys(o) {
+    var out = {};
+    Object.keys(o).forEach(function (k) { out[k.trim().toLowerCase()] = o[k]; });
+    return out;
+  }
+
+  $("clearBtn").addEventListener("click", function () {
+    if (!state.tx.length && !Object.keys(state.budgets).length) { Store.toast("Nothing to clear."); return; }
+    if (!confirm("Delete ALL transactions and budget targets? This cannot be undone.")) return;
+    state = { tx: [], budgets: {} };
+    Store.remove(NS);
+    filters = { month: "all", type: "all", category: "all", q: "", day: null };
+    $("fSearch").value = ""; $("fTypeF").value = "all";
+    stopEdit();
+    render(); Store.toast("All data cleared.");
+  });
+
+  /* ---------------- boot ---------------- */
+  $("fDate").value = Store.today();
+  render();
+})();
+</script>
+</body></html>

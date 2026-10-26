@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<title>Toolbox — Free Local-First Money &amp; Health Tools</title>
+<link rel="stylesheet" href="assets/css/base.css">
+<style>
+  .hero{padding:28px 0 8px}
+  .hero h1{font-size:30px;margin:0 0 6px}
+  .hero p{color:var(--muted);max-width:640px}
+  .search{margin:18px 0}
+  .search input{max-width:420px}
+  .sec{margin:26px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+</style>
+
+<meta name="description" content="A portfolio of free, private, local-first web tools for money and health: budget planner, net worth tracker, FIRE calculator, debt payoff, TDEE, habit tracker and more. No accounts, no tracking — your data stays in your browser.">
+<meta name="keywords" content="local-first web tools, privacy, no tracking, budget planner, net worth, FIRE calculator, debt payoff, TDEE, habit tracker, offline calculator">
+<meta name="author" content="ATLAS / George">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#070b12">
+<link rel="canonical" href="https://chftn.github.io/webtools/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Toolbox">
+<meta property="og:title" content="Toolbox — Free Local-First Money &amp; Health Tools">
+<meta property="og:description" content="A portfolio of free, private, local-first web tools for money and health: budget planner, net worth tracker, FIRE calculator, debt payoff, TDEE, habit tracker and more. No accounts, no tracking — your data stays in your browser.">
+<meta property="og:url" content="https://chftn.github.io/webtools/">
+<meta property="og:locale" content="en_AU">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Toolbox — Free Local-First Money &amp; Health Tools">
+<meta name="twitter:description" content="A portfolio of free, private, local-first web tools for money and health: budget planner, net worth tracker, FIRE calculator, debt payoff, TDEE, habit tracker and more. No accounts, no tracking — your data stays in your browser.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Toolbox \u2014 Free Local-First Money & Health Tools","url":"https://chftn.github.io/webtools/","description":"A portfolio of free, private, local-first web tools for money and health: budget planner, net worth tracker, FIRE calculator, debt payoff, TDEE, habit tracker and more. No accounts, no tracking \u2014 your data stays in your browser.","inLanguage":"en","isAccessibleForFree":true,"hasPart":{"@type":"ItemList","itemListElement":[{"@type":"ListItem","position":1,"name":"Budget Planner","url":"https://chftn.github.io/webtools/tools/budget-planner/"},{"@type":"ListItem","position":2,"name":"Net Worth Tracker","url":"https://chftn.github.io/webtools/tools/net-worth/"},{"@type":"ListItem","position":3,"name":"FIRE Calculator","url":"https://chftn.github.io/webtools/tools/fire-calculator/"},{"@type":"ListItem","position":4,"name":"Compound Interest Calculator","url":"https://chftn.github.io/webtools/tools/compound-interest/"},{"@type":"ListItem","position":5,"name":"Debt Payoff Planner","url":"https://chftn.github.io/webtools/tools/debt-payoff/"},{"@type":"ListItem","position":6,"name":"Water Intake Calculator","url":"https://chftn.github.io/webtools/tools/water-intake/"},{"@type":"ListItem","position":7,"name":"Bodyweight Workout Plan & Tracker","url":"https://chftn.github.io/webtools/tools/bodyweight/"},{"@type":"ListItem","position":8,"name":"StrongLifts 5\u00d75 Tracker","url":"https://chftn.github.io/webtools/tools/stronglifts-5x5/"},{"@type":"ListItem","position":9,"name":"TDEE & Macro Calculator","url":"https://chftn.github.io/webtools/tools/tdee/"},{"@type":"ListItem","position":10,"name":"Habit Tracker","url":"https://chftn.github.io/webtools/tools/habit-tracker/"}]}}</script>
+</head>
+<body>
+<div class="topbar"><div class="inner">
+  <span class="brand">🧰 Toolbox</span><span class="spacer"></span>
+  <a class="back" href="#" id="backupAll">Backup all data</a>
+</div></div>
+
+<div class="wrap" role="main">
+  <div class="hero">
+    <h1>Local-first web tools</h1>
+    <p>Small single-purpose tools for money and health. Everything is stored in your
+       browser (localStorage) — nothing is uploaded. Export or import any dataset as CSV.</p>
+    <div class="search"><input id="q" type="search" placeholder="Filter tools…" autocomplete="off"></div>
+  </div>
+
+  <div class="sec">Financial</div>
+  <div class="grid cards" id="fin"></div>
+
+  <div class="sec">Health &amp; habits</div>
+  <div class="grid cards" id="health"></div>
+
+  <footer>
+    <p>Data lives in this browser only. <a href="#" id="backupAll2">Download a full JSON backup</a> before clearing site data.</p>
+    <p id="count" class="muted"></p>
+  </footer>
+</div>
+
+<script src="assets/js/store.js"></script>
+<script>
+const TOOLS = [
+  {sec:"fin", ico:"📊", name:"Budget Planner", desc:"Income vs expenses, categories, monthly calendar.", href:"tools/budget-planner/"},
+  {sec:"fin", ico:"💰", name:"Net Worth Tracker", desc:"Assets & liabilities over time, snapshots and trend.", href:"tools/net-worth/"},
+  {sec:"fin", ico:"🔥", name:"FIRE Calculator", desc:"Financial-independence number, years to FI, safe withdrawal.", href:"tools/fire-calculator/"},
+  {sec:"fin", ico:"📈", name:"Compound Interest", desc:"Savings goals: growth, contributions, time to target.", href:"tools/compound-interest/"},
+  {sec:"fin", ico:"💳", name:"Debt Payoff Planner", desc:"Snowball vs avalanche, payoff date, interest saved.", href:"tools/debt-payoff/"},
+  {sec:"health", ico:"💧", name:"Water Intake", desc:"Daily hydration target from weight, activity, climate.", href:"tools/water-intake/"},
+  {sec:"health", ico:"🏋️", name:"Bodyweight Plan", desc:"Routine builder + workout log with progressions.", href:"tools/bodyweight/"},
+  {sec:"health", ico:"⚙️", name:"5×5 Tracker", desc:"StrongLifts 5×5 plan, sets, weights and progression.", href:"tools/stronglifts-5x5/"},
+  {sec:"health", ico:"🥗", name:"TDEE & Macros", desc:"Calorie target from BMR/activity, protein/carb/fat split.", href:"tools/tdee/"},
+  {sec:"health", ico:"✅", name:"Habit Tracker", desc:"Streaks and a monthly grid for daily habits.", href:"tools/habit-tracker/"}
+];
+
+function card(t){
+  return `<a class="card tool" href="${t.href}" data-name="${(t.name+' '+t.desc).toLowerCase()}">
+    <span class="ico">${t.ico}</span>
+    <span class="t">${t.name}</span>
+    <span class="d">${t.desc}</span>
+  </a>`;
+}
+document.getElementById("fin").innerHTML = TOOLS.filter(t=>t.sec==="fin").map(card).join("");
+document.getElementById("health").innerHTML = TOOLS.filter(t=>t.sec==="health").map(card).join("");
+document.getElementById("count").textContent = TOOLS.length + " tools · no accounts, no tracking, no server.";
+
+document.getElementById("q").addEventListener("input", e=>{
+  const q = e.target.value.toLowerCase().trim();
+  document.querySelectorAll(".card.tool").forEach(c=>{
+    c.style.display = c.dataset.name.includes(q) ? "" : "none";
+  });
+});
+
+function backupAll(e){
+  e.preventDefault();
+  const data = {};
+  Store.keys().forEach(k => data[k] = Store.get(k, null));
+  if (!Object.keys(data).length) { Store.toast("No data stored yet"); return; }
+  Store.exportJSON("toolbox-backup", { exported: new Date().toISOString(), data });
+}
+document.getElementById("backupAll").onclick = backupAll;
+document.getElementById("backupAll2").onclick = backupAll;
+</script>
+</body>
+</html>

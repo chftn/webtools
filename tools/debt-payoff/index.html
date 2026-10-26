@@ -1,0 +1,484 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+<title>Debt Payoff Planner — Snowball vs Avalanche | Toolbox</title>
+<link rel="stylesheet" href="../../assets/css/base.css">
+<meta name="description" content="Free debt-payoff planner: compare the snowball vs avalanche methods, see your payoff date and interest saved, and export a plan to CSV. Private and local-first.">
+<meta name="keywords" content="debt payoff planner, snowball method, avalanche method, debt repayment, interest saved, payoff date, credit card debt">
+<meta name="author" content="ATLAS / George">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#070b12">
+<link rel="canonical" href="https://chftn.github.io/webtools/tools/debt-payoff/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Toolbox">
+<meta property="og:title" content="Debt Payoff Planner — Snowball vs Avalanche | Toolbox">
+<meta property="og:description" content="Free debt-payoff planner: compare the snowball vs avalanche methods, see your payoff date and interest saved, and export a plan to CSV. Private and local-first.">
+<meta property="og:url" content="https://chftn.github.io/webtools/tools/debt-payoff/">
+<meta property="og:locale" content="en_AU">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Debt Payoff Planner — Snowball vs Avalanche | Toolbox">
+<meta name="twitter:description" content="Free debt-payoff planner: compare the snowball vs avalanche methods, see your payoff date and interest saved, and export a plan to CSV. Private and local-first.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Debt Payoff Planner \u2014 Snowball vs Avalanche | Toolbox","url":"https://chftn.github.io/webtools/tools/debt-payoff/","description":"Free debt-payoff planner: compare the snowball vs avalanche methods, see your payoff date and interest saved, and export a plan to CSV. Private and local-first.","inLanguage":"en","isAccessibleForFree":true,"operatingSystem":"Any","browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"applicationCategory":"FinanceApplication"}</script>
+</head>
+<body>
+<div class="topbar"><div class="inner"><span class="brand">💳 Debt Payoff Planner</span><span class="spacer"></span>
+<a class="back" href="../../index.html">← All tools</a></div></div>
+<div class="wrap" role="main">
+  <h1>Debt Payoff Planner</h1><p class="sub">Compare the snowball and avalanche methods, see your debt-free date, and find the cheaper path.</p>
+
+  <h2>Your debts</h2>
+  <div class="card">
+    <div class="grid two">
+      <div><label for="dName">Name</label><input id="dName" placeholder="e.g. Visa card" autocomplete="off"></div>
+      <div><label for="dBalance">Balance</label><input id="dBalance" type="number" min="0" step="0.01" placeholder="0.00" inputmode="decimal"></div>
+      <div><label for="dApr">APR %</label><input id="dApr" type="number" min="0" step="0.01" placeholder="19.99" inputmode="decimal"></div>
+      <div><label for="dMin">Minimum payment / month</label><input id="dMin" type="number" min="0" step="0.01" placeholder="50.00" inputmode="decimal"></div>
+    </div>
+    <div class="actions" style="margin-bottom:0">
+      <button class="btn primary" id="saveDebt">Add debt</button>
+      <button class="btn hidden" id="cancelEdit" type="button">Cancel edit</button>
+      <span class="muted" id="formHint" style="align-self:center;font-size:13px"></span>
+    </div>
+  </div>
+
+  <div style="margin-top:14px"><div class="tablewrap" id="debtWrap"></div></div>
+
+  <h2>Payment plan</h2>
+  <div class="card">
+    <div class="row">
+      <div><label for="extra">Extra payment / month (on top of minimums)</label>
+        <input id="extra" type="number" min="0" step="10" value="0" inputmode="decimal"></div>
+      <div><label for="method">Strategy shown in detail</label>
+        <select id="method"><option value="snowball">Snowball — lowest balance first</option>
+          <option value="avalanche">Avalanche — highest APR first</option></select></div>
+      <div><label for="granularity">Schedule detail</label>
+        <select id="granularity"><option value="month">Monthly</option><option value="year">Yearly summary</option></select></div>
+    </div>
+    <p class="muted" id="planNote" style="font-size:13px;margin-bottom:0"></p>
+  </div>
+
+  <div id="results"></div>
+
+  <h2>Schedule — <span id="schedTitle">snowball</span></h2>
+  <div class="tablewrap" id="schedWrap"></div>
+
+  <h2>Payoff order</h2>
+  <div class="tablewrap" id="orderWrap"></div>
+
+  <div class="actions">
+    <button class="btn" id="expCsv" type="button">⬇ Export CSV</button>
+    <button class="btn" id="impCsv" type="button">⬆ Import CSV</button>
+    <button class="btn" id="expJson" type="button">⬇ Backup JSON</button>
+    <button class="btn" id="impJson" type="button">⬆ Restore JSON</button>
+    <button class="btn bad" id="clearAll" type="button">🗑 Clear data</button>
+  </div>
+
+  <footer>Data stays in this browser · <a href="../../index.html">Toolbox</a></footer>
+</div>
+<script src="../../assets/js/store.js"></script>
+<script>
+(function () {
+  "use strict";
+  var NS = "debt-payoff";
+  var MAX_MONTHS = 1200; // 100 years — beyond this we call a debt unpayable
+
+  /* ---------------- state ---------------- */
+  var defaults = { debts: [], extra: 0, method: "snowball", granularity: "month" };
+  var state = Object.assign({}, defaults, Store.get(NS, defaults) || {});
+  if (!Array.isArray(state.debts)) state.debts = [];
+  var editingId = null;
+
+  function save() { Store.set(NS, state); }
+
+  /* ---------------- helpers ---------------- */
+  function num(v) { var n = parseFloat(v); return isFinite(n) ? n : 0; }
+  function el(id) { return document.getElementById(id); }
+  function addMonths(base, n) { var d = new Date(base.getFullYear(), base.getMonth() + n, 1); return d; }
+
+  /* ---------------- simulation ----------------
+     Each month: interest accrues on every open balance, then the full payment pool
+     (all minimums + the extra payment) is applied in the strategy's priority order.
+     The payment budget stays at its original size even as debts clear, so minimums
+     freed by a cleared debt roll over onto the next target — that is what creates
+     the snowball/avalanche "rollover" effect. Pass 1 covers minimums, pass 2 sweeps
+     everything left onto the priority debt. */
+  function simulate(debts, extra, method) {
+    var ds = debts.filter(function (d) { return num(d.balance) > 0.005; }).map(function (d, i) {
+      return { id: d.id, name: d.name, bal: num(d.balance), apr: num(d.apr), min: num(d.min),
+        r: num(d.apr) / 100 / 12, interest: 0, principal: 0, paidMonth: null, paidDate: null,
+        order: null, seq: i };
+    });
+    if (!ds.length) return null;
+
+    var order = ds.slice().sort(method === "snowball"
+      ? function (a, b) { return a.bal - b.bal || a.apr - b.apr; }
+      : function (a, b) { return b.apr - a.apr || a.bal - b.bal; });
+
+    var total = ds.reduce(function (s, d) { return s + d.bal; }, 0);
+    // Fixed monthly budget: minimums never shrink when a debt clears, they roll over.
+    var paymentPool = extra + ds.reduce(function (s, d) { return s + d.min; }, 0);
+    var balances = [total];
+    var schedule = [];
+    var month = 0, totalInterest = 0, stuck = false, done = 0;
+    var start = new Date(); start = new Date(start.getFullYear(), start.getMonth(), 1);
+
+    while (ds.some(function (d) { return d.bal > 0.005; }) && month < MAX_MONTHS) {
+      month++;
+      var startBal = ds.reduce(function (s, d) { return s + d.bal; }, 0);
+      var interestThis = 0;
+
+      ds.forEach(function (d) {
+        if (d.bal <= 0.005) return;
+        var i = d.bal * d.r;
+        d.bal += i; d.interest += i; interestThis += i;
+      });
+
+      // pass 1 — minimums, in priority order
+      var remaining = paymentPool;
+      order.forEach(function (d) {
+        if (remaining <= 0.005 || d.bal <= 0.005) return;
+        var pay = Math.min(d.min, d.bal, remaining);
+        d.bal -= pay; remaining -= pay;
+      });
+      // pass 2 — every leftover dollar (extra + freed minimums) onto priority debts
+      order.forEach(function (d) {
+        if (remaining <= 0.005 || d.bal <= 0.005) return;
+        var pay = Math.min(d.bal, remaining);
+        d.bal -= pay; remaining -= pay;
+      });
+
+      var endBal = ds.reduce(function (s, d) { return s + d.bal; }, 0);
+      var principalThis = startBal + interestThis - endBal;
+
+      // mark payoffs in this month
+      order.forEach(function (d) {
+        if (d.bal <= 0.005 && d.paidMonth == null) {
+          d.paidMonth = month; done++;
+          d.order = done;
+          d.paidDate = addMonths(start, month);
+        }
+      });
+
+      totalInterest += interestThis;
+      schedule.push({ month: month, date: addMonths(start, month), startBal: startBal,
+        interest: interestThis, principal: principalThis, endBal: Math.max(0, endBal) });
+      balances.push(Math.max(0, endBal));
+
+      if (startBal - endBal < 0.005) { stuck = true; break; } // no progress: minimums can't beat interest
+    }
+    if (ds.some(function (d) { return d.bal > 0.005; })) stuck = true;
+
+    var openRemaining = ds.reduce(function (s, d) { return s + d.bal; }, 0);
+    var months = schedule.length;
+    var debtFree = months ? addMonths(start, months) : null;
+
+    return { method: method, debts: order, schedule: schedule, balances: balances,
+      months: months, totalInterest: totalInterest, totalPaid: total + totalInterest,
+      startTotal: total, stuck: stuck, openRemaining: openRemaining, debtFree: debtFree };
+  }
+
+  /* yearly roll-up of a monthly schedule */
+  function yearly(schedule) {
+    var out = [], map = {};
+    schedule.forEach(function (r) {
+      var y = r.date.getFullYear();
+      if (!map[y]) { map[y] = { year: y, interest: 0, principal: 0, startBal: r.startBal, endBal: r.endBal, months: 0 }; out.push(map[y]); }
+      var g = map[y];
+      g.interest += r.interest; g.principal += r.principal; g.endBal = r.endBal; g.months++;
+    });
+    return out;
+  }
+
+  /* ---------------- rendering ---------------- */
+  function fmtDate(d) {
+    if (!d) return "—";
+    return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  }
+  function monthLabel(n) {
+    if (n <= 0) return "0 months";
+    var y = Math.floor(n / 12), m = n % 12, parts = [];
+    if (y) parts.push(y + (y === 1 ? " yr" : " yrs"));
+    if (m) parts.push(m + (m === 1 ? " mo" : " mos"));
+    return parts.join(" ") + " (" + n + " mo)";
+  }
+
+  function renderDebts() {
+    var w = el("debtWrap");
+    if (!state.debts.length) {
+      w.innerHTML = '<div class="empty">No debts yet. Add one above to see your payoff plan.</div>';
+      return;
+    }
+    var totalBal = 0, totalMin = 0;
+    var rows = state.debts.map(function (d) {
+      totalBal += num(d.balance); totalMin += num(d.min);
+      var warn = num(d.min) > 0 && num(d.balance) * (num(d.apr) / 100 / 12) > num(d.min)
+        ? ' <span class="pill" style="color:var(--warn);border-color:var(--warn)">min &lt; interest</span>' : "";
+      return '<tr><td>' + Store.esc(d.name) + warn + '</td>' +
+        '<td class="num">' + Store.money(num(d.balance)) + '</td>' +
+        '<td class="num">' + Store.num(num(d.apr), 2) + '%</td>' +
+        '<td class="num">' + Store.money(num(d.min)) + '</td>' +
+        '<td><button class="btn sm" data-edit="' + d.id + '" type="button">Edit</button> ' +
+        '<button class="btn sm bad" data-del="' + d.id + '" type="button">Delete</button></td></tr>';
+    }).join("");
+    w.innerHTML = '<table><thead><tr><th>Debt</th><th class="num">Balance</th><th class="num">APR</th>' +
+      '<th class="num">Min / mo</th><th></th></tr></thead><tbody>' + rows + '</tbody>' +
+      '<tfoot><tr><td><strong>Total</strong></td><td class="num"><strong>' + Store.money(totalBal) + '</strong></td>' +
+      '<td></td><td class="num"><strong>' + Store.money(totalMin) + '</strong></td><td></td></tr></tfoot></table>';
+    Array.prototype.forEach.call(w.querySelectorAll("[data-edit]"), function (b) {
+      b.onclick = function () { startEdit(b.getAttribute("data-edit")); };
+    });
+    Array.prototype.forEach.call(w.querySelectorAll("[data-del]"), function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute("data-del");
+        var d = state.debts.filter(function (x) { return x.id === id; })[0];
+        if (!d) return;
+        if (!confirm('Delete "' + d.name + '"? This cannot be undone.')) return;
+        state.debts = state.debts.filter(function (x) { return x.id !== id; });
+        save(); renderAll(); Store.toast("Debt deleted");
+      };
+    });
+  }
+
+  function startEdit(id) {
+    var d = state.debts.filter(function (x) { return x.id === id; })[0];
+    if (!d) return;
+    editingId = id;
+    el("dName").value = d.name; el("dBalance").value = d.balance; el("dApr").value = d.apr; el("dMin").value = d.min;
+    el("saveDebt").textContent = "Save changes";
+    el("cancelEdit").classList.remove("hidden");
+    el("formHint").textContent = "Editing “" + d.name + "”";
+    el("dName").focus();
+  }
+  function endEdit() {
+    editingId = null;
+    el("saveDebt").textContent = "Add debt";
+    el("cancelEdit").classList.add("hidden");
+    el("formHint").textContent = "";
+  }
+
+  function submitDebt() {
+    var name = el("dName").value.trim();
+    var balance = num(el("dBalance").value), apr = num(el("dApr").value), min = num(el("dMin").value);
+    if (!name) { Store.toast("Give the debt a name"); el("dName").focus(); return; }
+    if (balance <= 0) { Store.toast("Balance must be greater than 0"); el("dBalance").focus(); return; }
+    if (min < 0 || apr < 0) { Store.toast("APR and minimum can't be negative"); return; }
+    if (editingId) {
+      state.debts = state.debts.map(function (d) {
+        return d.id === editingId ? { id: d.id, name: name, balance: balance, apr: apr, min: min } : d;
+      });
+      Store.toast("Debt updated");
+    } else {
+      state.debts.push({ id: Store.uid(), name: name, balance: balance, apr: apr, min: min });
+      Store.toast("Debt added");
+    }
+    el("dName").value = ""; el("dBalance").value = ""; el("dApr").value = ""; el("dMin").value = "";
+    endEdit(); save(); renderAll();
+  }
+
+  /* simple two-series SVG line chart of remaining balance over time */
+  function chart(series) {
+    var W = 640, H = 220, pad = 34;
+    var maxLen = Math.max.apply(null, series.map(function (s) { return s.points.length; }));
+    var maxVal = Math.max.apply(null, series.map(function (s) { return Math.max.apply(null, s.points); }));
+    if (!maxLen || !maxVal) return "";
+    function x(i) { return pad + (W - pad * 2) * (maxLen <= 1 ? 0 : i / (maxLen - 1)); }
+    function y(v) { return H - pad - (H - pad * 2) * (v / maxVal); }
+    var paths = series.map(function (s) {
+      var pts = s.points.map(function (v, i) { return x(i).toFixed(1) + "," + y(v).toFixed(1); }).join(" ");
+      return '<polyline fill="none" stroke="' + s.color + '" stroke-width="2" points="' + pts + '"/>';
+    }).join("");
+    var grid = [0, 0.25, 0.5, 0.75, 1].map(function (f) {
+      var v = maxVal * (1 - f), gy = y(v).toFixed(1);
+      return '<line x1="' + pad + '" y1="' + gy + '" x2="' + (W - pad) + '" y2="' + gy + '" stroke="rgba(34,211,238,.28)"/>' +
+        '<text x="4" y="' + (y(v) + 4).toFixed(1) + '" fill="#5f7b8c" font-size="10">' +
+        Store.money(v).replace("A$", "") + '</text>';
+    }).join("");
+    var legend = series.map(function (s, i) {
+      return '<text x="' + (pad + i * 150) + '" y="' + (H - 6) + '" fill="' + s.color + '" font-size="12">■ ' + Store.esc(s.name) + '</text>';
+    }).join("");
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="width:100%;height:auto;display:block" role="img" ' +
+      'aria-label="Remaining balance over time">' + grid + paths + legend + '</svg>';
+  }
+
+  function methodCard(res, best) {
+    if (!res) return "";
+    var cls = best ? "pos" : "";
+    return '<div class="card"><h3 style="margin-top:0">' + (res.method === "snowball" ? "Snowball" : "Avalanche") +
+      (best ? ' <span class="pill pos">cheapest</span>' : "") + '</h3>' +
+      '<div class="kpis">' +
+      '<div class="kpi"><div class="v">' + (res.stuck ? "—" : Store.num(res.months)) + '</div><div class="l">Months to debt-free</div></div>' +
+      '<div class="kpi"><div class="v">' + Store.money(res.totalInterest) + '</div><div class="l">Total interest</div></div>' +
+      '<div class="kpi"><div class="v">' + (res.stuck ? "not cleared" : fmtDate(res.debtFree)) + '</div><div class="l">Debt-free date</div></div>' +
+      '<div class="kpi"><div class="v">' + Store.money(res.totalPaid) + '</div><div class="l">Total paid</div></div>' +
+      '</div>' +
+      (res.stuck ? '<p class="muted" style="color:var(--warn);font-size:13px;margin:10px 0 0">Your payments don\'t beat the interest — ' +
+        'this plan never clears the debt. Increase the minimums or the extra payment.</p>' : "") +
+      '</div>';
+  }
+
+  function renderResults() {
+    var host = el("results");
+    var debts = state.debts.filter(function (d) { return num(d.balance) > 0.005; });
+    if (!debts.length) {
+      host.innerHTML = '<div class="card"><div class="empty">No debts yet. Add one above to see your payoff plan.</div></div>';
+      el("schedWrap").innerHTML = '<div class="empty">Nothing to schedule.</div>';
+      el("orderWrap").innerHTML = '<div class="empty">Nothing to order.</div>';
+      el("planNote").textContent = "";
+      el("schedTitle").textContent = state.method;
+      return;
+    }
+    var extra = num(state.extra);
+    var snow = simulate(debts, extra, "snowball");
+    var ava = simulate(debts, extra, "avalanche");
+    var bothClear = snow && ava && !snow.stuck && !ava.stuck;
+    var best = null;
+    if (bothClear) best = (snow.totalInterest <= ava.totalInterest) ? "snowball" : "avalanche";
+
+    var pay = debts.reduce(function (s, d) { return s + num(d.min); }, 0) + extra;
+    el("planNote").textContent = "Paying " + Store.money(pay) + " / month (" +
+      Store.money(debts.reduce(function (s, d) { return s + num(d.min); }, 0)) + " minimums + " +
+      Store.money(extra) + " extra).";
+
+    var reco = "";
+    if (bothClear) {
+      var diff = Math.abs(snow.totalInterest - ava.totalInterest);
+      var winner = best === "snowball" ? snow : ava, loser = best === "snowball" ? ava : snow;
+      var md = Math.abs(winner.months - loser.months);
+      reco = '<div class="card" style="border-color:var(--accent2)"><strong>' +
+        (best === "snowball" ? "Snowball" : "Avalanche") + ' is the cheaper method</strong>' +
+        '<p class="sub" style="margin:8px 0 0">It saves <span class="pos">' + Store.money(diff) + '</span> in interest' +
+        (md ? ' and clears your debt ' + monthLabel(md) + ' sooner' : ' (same timeline)') +
+        '. Total interest: ' + Store.money(winner.totalInterest) + ' vs ' + Store.money(loser.totalInterest) + '.</p></div>';
+    } else if (snow && ava) {
+      reco = '<div class="card" style="border-color:var(--warn)"><strong>Neither plan clears the debt</strong>' +
+        '<p class="sub" style="margin:8px 0 0">Interest is outpacing your payments. Raise a minimum or increase the extra payment to see a payoff date.</p></div>';
+    }
+
+    host.innerHTML = '<h2>Strategy comparison</h2>' + reco +
+      '<div class="grid two" style="margin-top:14px">' + methodCard(snow, best === "snowball") + methodCard(ava, best === "avalanche") + '</div>' +
+      '<h2>Balance over time</h2><div class="card">' +
+      chart([{ name: "Snowball", color: "#22d3ee", points: snow.balances },
+             { name: "Avalanche", color: "#38e0a0", points: ava.balances }]) +
+      '</div>';
+
+    var active = state.method === "avalanche" ? ava : snow;
+    el("schedTitle").textContent = active.method === "avalanche" ? "avalanche" : "snowball";
+    renderSchedule(active);
+    renderOrder(active);
+  }
+
+  function renderSchedule(res) {
+    var w = el("schedWrap");
+    if (!res || !res.schedule.length) { w.innerHTML = '<div class="empty">No schedule to show.</div>'; return; }
+    if (state.granularity === "year") {
+      var yrs = yearly(res.schedule);
+      w.innerHTML = '<table><thead><tr><th>Year</th><th class="num">Starting balance</th><th class="num">Interest</th>' +
+        '<th class="num">Principal paid</th><th class="num">Ending balance</th><th class="num">Months</th></tr></thead><tbody>' +
+        yrs.map(function (y) {
+          return '<tr><td>' + y.year + '</td><td class="num">' + Store.money(y.startBal) + '</td>' +
+            '<td class="num neg">' + Store.money(y.interest) + '</td><td class="num pos">' + Store.money(y.principal) + '</td>' +
+            '<td class="num">' + Store.money(y.endBal) + '</td><td class="num">' + y.months + '</td></tr>';
+        }).join("") + '</tbody></table>';
+      return;
+    }
+    w.innerHTML = '<table><thead><tr><th>#</th><th>Month</th><th class="num">Starting balance</th>' +
+      '<th class="num">Interest</th><th class="num">Principal</th><th class="num">Remaining</th></tr></thead><tbody>' +
+      res.schedule.map(function (r) {
+        return '<tr><td>' + r.month + '</td><td>' + fmtDate(r.date) + '</td>' +
+          '<td class="num">' + Store.money(r.startBal) + '</td>' +
+          '<td class="num neg">' + Store.money(r.interest) + '</td>' +
+          '<td class="num pos">' + Store.money(r.principal) + '</td>' +
+          '<td class="num">' + Store.money(r.endBal) + '</td></tr>';
+      }).join("") + '</tbody></table>';
+  }
+
+  function renderOrder(res) {
+    var w = el("orderWrap");
+    if (!res || !res.debts.length) { w.innerHTML = '<div class="empty">Nothing to order.</div>'; return; }
+    w.innerHTML = '<table><thead><tr><th>#</th><th>Debt</th><th class="num">Start balance</th><th class="num">APR</th>' +
+      '<th>Payoff date</th><th class="num">Months</th><th class="num">Interest paid</th></tr></thead><tbody>' +
+      res.debts.map(function (d) {
+        return '<tr><td>' + (d.order || "—") + '</td><td>' + Store.esc(d.name) + '</td>' +
+          '<td class="num">' + Store.money(num(d.balance)) + '</td>' +
+          '<td class="num">' + Store.num(d.apr, 2) + '%</td>' +
+          '<td>' + (d.paidDate ? fmtDate(d.paidDate) : "not cleared") + '</td>' +
+          '<td class="num">' + (d.paidMonth == null ? "—" : d.paidMonth) + '</td>' +
+          '<td class="num">' + Store.money(d.interest) + '</td></tr>';
+      }).join("") + '</tbody></table>';
+  }
+
+  function renderAll() {
+    el("extra").value = state.extra;
+    el("method").value = state.method;
+    el("granularity").value = state.granularity;
+    renderDebts(); renderResults();
+  }
+
+  /* ---------------- events ---------------- */
+  el("saveDebt").onclick = submitDebt;
+  el("cancelEdit").onclick = function () {
+    el("dName").value = ""; el("dBalance").value = ""; el("dApr").value = ""; el("dMin").value = "";
+    endEdit();
+  };
+  ["dName", "dBalance", "dApr", "dMin"].forEach(function (id) {
+    el(id).addEventListener("keydown", function (e) { if (e.key === "Enter") submitDebt(); });
+  });
+  el("extra").addEventListener("input", function () {
+    state.extra = num(el("extra").value); save(); renderResults();
+  });
+  el("method").addEventListener("change", function () {
+    state.method = el("method").value; save(); renderResults();
+  });
+  el("granularity").addEventListener("change", function () {
+    state.granularity = el("granularity").value; save(); renderResults();
+  });
+
+  var DEBT_COLS = ["name", "balance", "apr", "min"];
+  el("expCsv").onclick = function () {
+    if (!state.debts.length) { Store.toast("No debts to export"); return; }
+    Store.exportCSV("debt-payoff-debts", state.debts.map(function (d) {
+      return { name: d.name, balance: num(d.balance), apr: num(d.apr), min: num(d.min) };
+    }), DEBT_COLS);
+  };
+  el("impCsv").onclick = function () {
+    Store.importCSV(function (objs) {
+      var added = 0, skipped = 0;
+      objs.forEach(function (o) {
+        var key = {};
+        Object.keys(o).forEach(function (k) { key[k.trim().toLowerCase()] = o[k]; });
+        var name = (key.name || key.debt || "").trim();
+        var bal = num(key.balance);
+        if (!name || bal <= 0) { skipped++; return; }
+        state.debts.push({ id: Store.uid(), name: name, balance: bal,
+          apr: num(key.apr || key["apr %"] || key.rate), min: num(key.min || key["minimum"] || key["min payment"]) });
+        added++;
+      });
+      save(); renderAll();
+      Store.toast(added ? "Imported " + added + " debt(s)" + (skipped ? ", skipped " + skipped : "")
+        : "No usable rows — expected columns: name,balance,apr,min");
+    });
+  };
+  el("expJson").onclick = function () { Store.exportJSON("debt-payoff", state); };
+  el("impJson").onclick = function () {
+    Store.importJSON(function (obj) {
+      if (!obj || typeof obj !== "object") { Store.toast("That file doesn't look like a backup"); return; }
+      if (!confirm("Restore from backup? This replaces your current debts.")) return;
+      state = Object.assign({}, defaults, obj);
+      if (!Array.isArray(state.debts)) state.debts = [];
+      state.debts = state.debts.map(function (d) {
+        return { id: d.id || Store.uid(), name: String(d.name || "").trim(), balance: num(d.balance),
+          apr: num(d.apr), min: num(d.min) };
+      }).filter(function (d) { return d.name; });
+      save(); endEdit(); renderAll();
+    });
+  };
+  el("clearAll").onclick = function () {
+    if (!confirm("Clear all debts, the extra payment and settings? This cannot be undone.")) return;
+    state = Object.assign({}, defaults, { debts: [] });
+    Store.remove(NS); save(); endEdit(); renderAll(); Store.toast("All data cleared");
+  };
+
+  renderAll();
+})();
+</script>
+</body></html>

@@ -1,0 +1,464 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+<title>Habit Tracker — Free Streaks &amp; Monthly Grid | Toolbox</title>
+<link rel="stylesheet" href="../../assets/css/base.css">
+<style>
+  /* tool-specific bits layered on top of the shared design system */
+  .dot{width:14px;height:14px;border-radius:50%;display:inline-block;flex:0 0 auto}
+  /* day cells become real <button>s so they are keyboard accessible */
+  .cal .d{border:1px solid transparent;font:inherit;color:inherit;padding:0;cursor:pointer;
+    flex-direction:column;gap:2px;line-height:1}
+  .cal .d.blank{background:transparent;border:none;cursor:default}
+  .cal .d .tick{font-size:11px;font-weight:700;line-height:1}
+  .cal .d.future{opacity:.45}
+  .cal .d.today{font-weight:700;box-shadow:0 0 0 2px rgba(56,224,160,.45)}
+  .cal .d:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .habithead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .qlist{display:flex;flex-wrap:wrap;gap:8px}
+  .qbtn{display:inline-flex;align-items:center;gap:8px}
+  .monthnav{display:flex;align-items:center;gap:10px}
+  .monthnav .lbl{flex:1;text-align:center;font-weight:600}
+  input[type=color]{height:42px;padding:4px}
+</style>
+<meta name="description" content="Free habit tracker: build daily habits with streaks and a monthly grid. Works offline — your data stays in your browser and exports to CSV.">
+<meta name="keywords" content="habit tracker, daily habits, streak tracker, monthly habit grid, routine builder, offline tracker">
+<meta name="author" content="ATLAS / George">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#070b12">
+<link rel="canonical" href="https://chftn.github.io/webtools/tools/habit-tracker/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Toolbox">
+<meta property="og:title" content="Habit Tracker — Free Streaks &amp; Monthly Grid | Toolbox">
+<meta property="og:description" content="Free habit tracker: build daily habits with streaks and a monthly grid. Works offline — your data stays in your browser and exports to CSV.">
+<meta property="og:url" content="https://chftn.github.io/webtools/tools/habit-tracker/">
+<meta property="og:locale" content="en_AU">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Habit Tracker — Free Streaks &amp; Monthly Grid | Toolbox">
+<meta name="twitter:description" content="Free habit tracker: build daily habits with streaks and a monthly grid. Works offline — your data stays in your browser and exports to CSV.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Habit Tracker \u2014 Free Streaks & Monthly Grid | Toolbox","url":"https://chftn.github.io/webtools/tools/habit-tracker/","description":"Free habit tracker: build daily habits with streaks and a monthly grid. Works offline \u2014 your data stays in your browser and exports to CSV.","inLanguage":"en","isAccessibleForFree":true,"operatingSystem":"Any","browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"applicationCategory":"LifestyleApplication"}</script>
+</head>
+<body>
+<div class="topbar"><div class="inner"><span class="brand">✅ Habit Tracker</span><span class="spacer"></span>
+<a class="back" href="../../index.html">← All tools</a></div></div>
+<div class="wrap" role="main">
+  <h1>Habit Tracker</h1><p class="sub">Add habits, tick off each day, and watch your streaks grow. Everything stays in this browser.</p>
+
+  <!-- add / edit a habit -->
+  <section class="card">
+    <h2 id="formTitle" style="margin-top:0">Add a habit</h2>
+    <div class="row">
+      <div><label for="hName">Habit name</label>
+        <input id="hName" placeholder="e.g. Read 20 pages" maxlength="60"></div>
+      <div><label for="hEmoji">Emoji (optional)</label>
+        <input id="hEmoji" placeholder="📚" maxlength="4"></div>
+      <div><label for="hColor">Colour</label>
+        <input id="hColor" type="color" value="#22d3ee"></div>
+      <div><label for="hFreq">Target</label>
+        <select id="hFreq">
+          <option value="daily">Daily</option>
+          <option value="weekly">X per week</option>
+        </select></div>
+      <div id="timesWrap" class="hidden"><label for="hTimes">Times per week</label>
+        <input id="hTimes" type="number" min="1" max="7" step="1" value="3"></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="saveBtn">Add habit</button>
+      <button class="btn hidden" id="cancelBtn">Cancel edit</button>
+    </div>
+  </section>
+
+  <div class="kpis" id="kpis"></div>
+
+  <h2 id="todayHeading">Today</h2>
+  <section class="card"><div class="qlist" id="todayList"></div></section>
+
+  <h2>Monthly grid <span class="muted" style="font-size:13px;font-weight:400">— click a day to tick it</span></h2>
+  <div class="monthnav">
+    <button class="btn sm" id="prevM">← Prev</button>
+    <div class="lbl" id="monthLabel"></div>
+    <button class="btn sm" id="nextM">Next →</button>
+  </div>
+  <div class="actions"><button class="btn sm" id="thisM">This month</button></div>
+  <div id="habits"></div>
+
+  <div class="actions">
+    <button class="btn sm" id="expHabits">⬇ Export habits CSV</button>
+    <button class="btn sm" id="expLog">⬇ Export log CSV</button>
+    <button class="btn sm" id="impHabits">⬆ Import habits CSV</button>
+    <button class="btn sm" id="impLog">⬆ Import log CSV</button>
+    <button class="btn sm bad" id="clearAll">🗑 Clear data</button>
+  </div>
+
+  <footer>Data stays in this browser · <a href="../../index.html">Toolbox</a></footer>
+</div>
+<script src="../../assets/js/store.js"></script>
+<script>
+(function () {
+  "use strict";
+  var NS = "habit-tracker";
+  var DEFAULT_COLOR = "#22d3ee";
+
+  /* ---------------- state ---------------- */
+  var state = Store.get(NS, null);
+  if (!state || typeof state !== "object") state = {};
+  if (!Array.isArray(state.habits)) state.habits = [];
+  if (!state.log || typeof state.log !== "object") state.log = {};
+  if (!state.view || !/^\d{4}-\d{2}$/.test(state.view)) state.view = Store.today().slice(0, 7);
+  var editingId = null;
+
+  function save() { Store.set(NS, state); }
+  function $(sel) { return document.querySelector(sel); }
+
+  /* ---------------- date helpers (all local-time, never UTC) ---------------- */
+  function parseYMD(s) { var p = String(s).split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function addDays(s, n) { var d = parseYMD(s); d.setDate(d.getDate() + n); return Store.date(d); }
+  function weekStart(s) { var d = parseYMD(s); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return Store.date(d); } // Monday
+  function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+  function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+  function viewParts() { var p = state.view.split("-").map(Number); return { y: p[0], m: p[1] }; }
+  function monthKey(y, m) { return y + "-" + pad2(m); }
+  function shiftMonth(delta) {
+    var v = viewParts(), y = v.y, m = v.m + delta;
+    while (m < 1) { m += 12; y--; }
+    while (m > 12) { m -= 12; y++; }
+    state.view = monthKey(y, m); save(); render();
+  }
+
+  /* ---------------- ticks ---------------- */
+  function isTicked(date, id) { var a = state.log[date]; return !!(a && a.indexOf(id) >= 0); }
+  function toggle(date, id) {
+    var a = state.log[date];
+    if (!a) a = state.log[date] = [];
+    var i = a.indexOf(id);
+    if (i >= 0) a.splice(i, 1); else a.push(id);
+    if (!a.length) delete state.log[date]; // keep the log tidy
+    save(); render();
+  }
+  function tickDates(id) { return Object.keys(state.log).filter(function (d) { return state.log[d].indexOf(id) >= 0; }); }
+
+  /* ---------------- streaks ----------------
+     A "period" is a day (daily habits) or a Mon–Sun week (X-per-week habits).
+     A period passes when its tick count reaches the target. The current period is
+     forgiven if it hasn't passed yet, so an un-ticked today never breaks a streak. */
+  function dailyStreaks(id) {
+    var dates = tickDates(id).sort();
+    if (!dates.length) return { cur: 0, best: 0 };
+    var set = {};
+    dates.forEach(function (d) { set[d] = 1; });
+    var today = Store.today();
+
+    var cur = 0, d = today;
+    if (!set[d]) d = addDays(d, -1);           // grace for today
+    while (set[d]) { cur++; d = addDays(d, -1); }
+
+    var best = 0, run = 0, x = dates[0];
+    while (x <= today) {                        // bounded walk, safe even with gaps
+      if (set[x]) { run++; if (run > best) best = run; } else run = 0;
+      x = addDays(x, 1);
+    }
+    return { cur: cur, best: best };
+  }
+
+  function weeklyStreaks(id, target) {
+    var counts = {};
+    tickDates(id).forEach(function (d) {
+      var k = weekStart(d);
+      counts[k] = (counts[k] || 0) + 1;
+    });
+    var keys = Object.keys(counts).sort();
+    if (!keys.length) return { cur: 0, best: 0 };
+    function pass(k) { return (counts[k] || 0) >= target; }
+
+    var thisWeek = weekStart(Store.today());
+    var cur = 0, k = thisWeek;
+    if (!pass(k)) k = addDays(k, -7);           // grace for the week in progress
+    while (pass(k)) { cur++; k = addDays(k, -7); }
+
+    var best = 0, run = 0, x = weekStart(keys[0]);
+    while (x <= thisWeek) {
+      if (pass(x)) { run++; if (run > best) best = run; } else run = 0;
+      x = addDays(x, 7);
+    }
+    return { cur: cur, best: best };
+  }
+
+  function habitStats(h, y, m) {
+    var target = h.freq.type === "weekly" ? Math.max(1, h.freq.times) : 1;
+    var st = h.freq.type === "weekly" ? weeklyStreaks(h.id, target) : dailyStreaks(h.id);
+    var key = monthKey(y, m);
+    var inMonth = tickDates(h.id).filter(function (d) { return d.slice(0, 7) === key; }).length;
+    var dim = daysInMonth(y, m);
+    var expected = h.freq.type === "weekly" ? target * dim / 7 : dim;
+    var pct = expected ? (inMonth / expected) * 100 : 0;
+    return { cur: st.cur, best: st.best, inMonth: inMonth, expected: expected, pct: pct };
+  }
+
+  function safeColor(c) { return /^#[0-9a-f]{6}$/i.test(c || "") ? c : DEFAULT_COLOR; }
+  function freqLabel(h) { return h.freq.type === "weekly" ? h.freq.times + "×/week" : "Daily"; }
+
+  /* ---------------- render ---------------- */
+  function render() {
+    renderMonthLabel();
+    renderKpis();
+    renderToday();
+    renderHabits();
+  }
+
+  function renderMonthLabel() {
+    var v = viewParts();
+    $("#monthLabel").textContent = new Date(v.y, v.m - 1, 1)
+      .toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  }
+
+  function renderKpis() {
+    var v = viewParts(), today = Store.today(), n = state.habits.length;
+    var todayDone = state.habits.filter(function (h) { return isTicked(today, h.id); }).length;
+    var pcts = state.habits.map(function (h) { return Math.min(100, habitStats(h, v.y, v.m).pct); });
+    var avg = pcts.length ? pcts.reduce(function (a, b) { return a + b; }, 0) / pcts.length : 0;
+    var longest = state.habits.reduce(function (a, h) {
+      var s = habitStats(h, v.y, v.m); return Math.max(a, s.cur);
+    }, 0);
+    $("#kpis").innerHTML =
+      '<div class="kpi"><div class="v">' + n + '</div><div class="l">Habits</div></div>' +
+      '<div class="kpi"><div class="v">' + todayDone + ' / ' + n + '</div><div class="l">Done today</div></div>' +
+      '<div class="kpi"><div class="v">' + Math.round(avg) + '%</div><div class="l">Month completion</div></div>' +
+      '<div class="kpi"><div class="v">' + longest + '</div><div class="l">Longest active streak</div></div>';
+  }
+
+  function renderToday() {
+    var today = Store.today();
+    $("#todayHeading").textContent = "Today — " + parseYMD(today)
+      .toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" });
+    var box = $("#todayList");
+    if (!state.habits.length) { box.innerHTML = '<div class="empty">No entries yet. Add a habit above.</div>'; return; }
+    box.innerHTML = state.habits.map(function (h) {
+      var done = isTicked(today, h.id);
+      var st = done ? ' style="border-color:' + h.color + ';color:' + h.color + '"' : "";
+      return '<button class="btn sm qbtn" data-quick="' + h.id + '"' + st + '>' +
+        '<span class="dot" style="background:' + h.color + '"></span>' +
+        (h.emoji ? Store.esc(h.emoji) + " " : "") + Store.esc(h.name) +
+        ' <span class="pill">' + (done ? "✓ done" : "tick") + '</span></button>';
+    }).join("");
+  }
+
+  function renderHabits() {
+    var box = $("#habits");
+    if (!state.habits.length) {
+      box.innerHTML = '<div class="card"><div class="empty">No entries yet. Add your first habit to see the monthly grid.</div></div>';
+      return;
+    }
+    var v = viewParts(), y = v.y, m = v.m, key = monthKey(y, m);
+    var dim = daysInMonth(y, m);
+    var offset = (parseYMD(key + "-01").getDay() + 6) % 7;      // Monday-first offset
+    var cells = Math.ceil((offset + dim) / 7) * 7;              // whole weeks
+    var today = Store.today();
+    var dows = ["M", "T", "W", "T", "F", "S", "S"];
+
+    box.innerHTML = state.habits.map(function (h) {
+      var s = habitStats(h, y, m);
+      var grid = dows.map(function (d) { return '<div class="h">' + d + '</div>'; }).join("");
+      for (var i = 0; i < cells; i++) {
+        var day = i - offset + 1;
+        if (day < 1 || day > dim) { grid += '<div class="d blank"></div>'; continue; }
+        var ds = key + "-" + pad2(day);
+        var done = isTicked(ds, h.id);
+        var cls = "d" + (done ? " has" : "") + (ds === today ? " today" : "") + (ds > today ? " future" : "");
+        var style = done ? ' style="background:' + h.color + '55;border-color:' + h.color + '"' : "";
+        grid += '<button class="' + cls + '" data-date="' + ds + '" data-habit="' + h.id + '"' + style +
+          ' title="' + ds + '" aria-label="' + ds + (done ? " done" : " not done") + '">' +
+          '<span>' + day + '</span>' + (done ? '<span class="tick">✓</span>' : '') + '</button>';
+      }
+      var note = h.freq.type === "weekly"
+        ? ' <span class="muted">(target ' + h.freq.times + '/week)</span>' : "";
+      return '<section class="card" style="margin-bottom:14px">' +
+        '<div class="habithead">' +
+          '<span class="dot" style="background:' + h.color + '"></span>' +
+          '<strong>' + (h.emoji ? Store.esc(h.emoji) + " " : "") + Store.esc(h.name) + '</strong>' +
+          '<span class="pill">' + freqLabel(h) + '</span><span class="spacer"></span>' +
+          '<button class="btn sm" data-edit="' + h.id + '">Edit</button>' +
+          '<button class="btn sm bad" data-del="' + h.id + '">Delete</button>' +
+        '</div>' +
+        '<div class="kpis" style="margin:12px 0">' +
+          '<div class="kpi"><div class="v">' + s.cur + '</div><div class="l">Current streak' +
+            (h.freq.type === "weekly" ? " (wk)" : " (d)") + '</div></div>' +
+          '<div class="kpi"><div class="v">' + s.best + '</div><div class="l">Best streak</div></div>' +
+          '<div class="kpi"><div class="v">' + Math.round(s.pct) + '%</div><div class="l">Month done (' +
+            s.inMonth + '/' + Store.num(s.expected, 0) + ')' + note + '</div></div>' +
+        '</div>' +
+        '<div class="bar"><span style="width:' + Math.min(100, s.pct) + '%;background:' + h.color + '"></span></div>' +
+        '<div class="cal" style="margin-top:12px">' + grid + '</div>' +
+      '</section>';
+    }).join("");
+  }
+
+  /* ---------------- habit CRUD ---------------- */
+  function clearForm() {
+    editingId = null;
+    $("#hName").value = ""; $("#hEmoji").value = ""; $("#hColor").value = DEFAULT_COLOR;
+    $("#hFreq").value = "daily"; $("#hTimes").value = 3;
+    $("#timesWrap").classList.add("hidden");
+    $("#formTitle").textContent = "Add a habit";
+    $("#saveBtn").textContent = "Add habit";
+    $("#cancelBtn").classList.add("hidden");
+  }
+
+  function startEdit(id) {
+    var h = state.habits.filter(function (x) { return x.id === id; })[0];
+    if (!h) return;
+    editingId = id;
+    $("#hName").value = h.name; $("#hEmoji").value = h.emoji || "";
+    $("#hColor").value = safeColor(h.color); $("#hFreq").value = h.freq.type;
+    $("#hTimes").value = h.freq.type === "weekly" ? h.freq.times : 3;
+    $("#timesWrap").classList.toggle("hidden", h.freq.type !== "weekly");
+    $("#formTitle").textContent = "Edit habit";
+    $("#saveBtn").textContent = "Save changes";
+    $("#cancelBtn").classList.remove("hidden");
+    $("#hName").focus();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function saveHabit() {
+    var name = $("#hName").value.trim();
+    if (!name) { Store.toast("Give the habit a name first"); $("#hName").focus(); return; }
+    var emoji = $("#hEmoji").value.trim();
+    var color = safeColor($("#hColor").value);
+    var type = $("#hFreq").value === "weekly" ? "weekly" : "daily";
+    var times = Math.max(1, Math.min(7, parseInt($("#hTimes").value, 10) || 1));
+    var freq = type === "weekly" ? { type: "weekly", times: times } : { type: "daily", times: 1 };
+
+    if (editingId) {
+      var h = state.habits.filter(function (x) { return x.id === editingId; })[0];
+      if (h) { h.name = name; h.emoji = emoji; h.color = color; h.freq = freq; }
+      Store.toast("Habit updated");
+      clearForm();
+    } else {
+      state.habits.push({ id: Store.uid(), name: name, emoji: emoji, color: color, freq: freq });
+      Store.toast("Habit added");
+      clearForm();
+    }
+    save(); render();
+  }
+
+  function delHabit(id) {
+    var h = state.habits.filter(function (x) { return x.id === id; })[0];
+    if (!h) return;
+    if (!confirm('Delete "' + h.name + '" and all of its history? This cannot be undone.')) return;
+    state.habits = state.habits.filter(function (x) { return x.id !== id; });
+    Object.keys(state.log).forEach(function (d) {           // purge its ticks
+      state.log[d] = state.log[d].filter(function (x) { return x !== id; });
+      if (!state.log[d].length) delete state.log[d];
+    });
+    if (editingId === id) clearForm();
+    save(); render(); Store.toast("Habit deleted");
+  }
+
+  /* ---------------- import / export ---------------- */
+  function exportHabits() {
+    Store.exportCSV("habit-tracker-habits", state.habits.map(function (h) {
+      return {
+        id: h.id, name: h.name, emoji: h.emoji || "", color: h.color,
+        type: h.freq.type, times: h.freq.type === "weekly" ? h.freq.times : 1
+      };
+    }), ["id", "name", "emoji", "color", "type", "times"]);
+  }
+
+  function exportLog() {
+    var names = {};
+    state.habits.forEach(function (h) { names[h.id] = h.name; });
+    var rows = [];
+    Object.keys(state.log).sort().forEach(function (d) {
+      state.log[d].slice().sort().forEach(function (id) {
+        if (names[id] === undefined) return;                 // orphaned ticks are not exported
+        rows.push({ date: d, habit_id: id, habit_name: names[id] });
+      });
+    });
+    Store.exportCSV("habit-tracker-log", rows, ["date", "habit_id", "habit_name"]);
+  }
+
+  function importHabits(objs) {
+    var added = 0, updated = 0;
+    objs.forEach(function (o) {
+      var name = String(o.name || o.Name || "").trim();
+      if (!name) return;
+      var isWeekly = /^week/i.test(String(o.type || o.freq || ""));
+      var times = Math.max(1, Math.min(7, parseInt(o.times, 10) || 1));
+      var freq = isWeekly ? { type: "weekly", times: times } : { type: "daily", times: 1 };
+      var emoji = String(o.emoji || "").trim();
+      var color = safeColor(String(o.color || "").trim());
+      var found = o.id ? state.habits.filter(function (x) { return x.id === String(o.id); })[0] : null;
+      if (found) { found.name = name; found.emoji = emoji; found.color = color; found.freq = freq; updated++; }
+      else { state.habits.push({ id: String(o.id || "") || Store.uid(), name: name, emoji: emoji, color: color, freq: freq }); added++; }
+    });
+    save(); render();
+    Store.toast("Habits: " + added + " added, " + updated + " updated");
+  }
+
+  function importLog(objs) {
+    var added = 0, skipped = 0;
+    objs.forEach(function (o) {
+      var date = String(o.date || "").trim();
+      var id = String(o.habit_id || "").trim();
+      var nm = String(o.habit_name || "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { skipped++; return; }
+      var h = state.habits.filter(function (x) { return x.id === id; })[0];
+      if (!h && nm) h = state.habits.filter(function (x) { return x.name === nm; })[0];
+      if (!h) { skipped++; return; }
+      var a = state.log[date] || (state.log[date] = []);
+      if (a.indexOf(h.id) < 0) { a.push(h.id); added++; }
+    });
+    save(); render();
+    Store.toast("Log: " + added + " tick(s) added" + (skipped ? ", " + skipped + " skipped" : ""));
+  }
+
+  /* ---------------- wiring ---------------- */
+  $("#hFreq").addEventListener("change", function () {
+    $("#timesWrap").classList.toggle("hidden", this.value !== "weekly");
+  });
+  $("#saveBtn").addEventListener("click", saveHabit);
+  $("#cancelBtn").addEventListener("click", function () { clearForm(); render(); });
+  $("#hName").addEventListener("keydown", function (e) { if (e.key === "Enter") saveHabit(); });
+  $("#hTimes").addEventListener("keydown", function (e) { if (e.key === "Enter") saveHabit(); });
+
+  $("#prevM").addEventListener("click", function () { shiftMonth(-1); });
+  $("#nextM").addEventListener("click", function () { shiftMonth(1); });
+  $("#thisM").addEventListener("click", function () {
+    state.view = Store.today().slice(0, 7); save(); render();
+  });
+
+  // one delegated handler for the whole habits panel: cells, edit, delete
+  $("#habits").addEventListener("click", function (e) {
+    var t = e.target.closest("button");
+    if (!t || !t.dataset) return;
+    if (t.dataset.edit) return startEdit(t.dataset.edit);
+    if (t.dataset.del) return delHabit(t.dataset.del);
+    if (t.dataset.date && t.dataset.habit) return toggle(t.dataset.date, t.dataset.habit);
+  });
+
+  $("#todayList").addEventListener("click", function (e) {
+    var t = e.target.closest("button[data-quick]");
+    if (t) toggle(Store.today(), t.dataset.quick);
+  });
+
+  $("#expHabits").addEventListener("click", exportHabits);
+  $("#expLog").addEventListener("click", exportLog);
+  $("#impHabits").addEventListener("click", function () {
+    if (!state.habits.length && !confirm("Importing habits into an empty tracker — continue?")) return;
+    Store.importCSV(importHabits);
+  });
+  $("#impLog").addEventListener("click", function () {
+    if (!state.habits.length) { Store.toast("Add or import habits before importing a log"); return; }
+    Store.importCSV(importLog);
+  });
+  $("#clearAll").addEventListener("click", function () {
+    if (!confirm("Clear ALL habits and history? This cannot be undone.")) return;
+    state = { habits: [], log: {}, view: Store.today().slice(0, 7) };
+    clearForm(); save(); render(); Store.toast("All data cleared");
+  });
+
+  /* ---------------- go ---------------- */
+  clearForm();
+  render();
+})();
+</script>
+</body></html>

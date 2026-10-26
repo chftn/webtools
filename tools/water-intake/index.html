@@ -1,0 +1,555 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+<title>Water Intake Calculator — Daily Hydration Target | Toolbox</title>
+<link rel="stylesheet" href="../../assets/css/base.css">
+<meta name="description" content="Free daily water-intake calculator: get a personal hydration target from your weight, activity level and climate. Local-first — your data stays in your browser.">
+<meta name="keywords" content="water intake calculator, daily hydration, how much water to drink, hydration target, water goal">
+<meta name="author" content="ATLAS / George">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#070b12">
+<link rel="canonical" href="https://chftn.github.io/webtools/tools/water-intake/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Toolbox">
+<meta property="og:title" content="Water Intake Calculator — Daily Hydration Target | Toolbox">
+<meta property="og:description" content="Free daily water-intake calculator: get a personal hydration target from your weight, activity level and climate. Local-first — your data stays in your browser.">
+<meta property="og:url" content="https://chftn.github.io/webtools/tools/water-intake/">
+<meta property="og:locale" content="en_AU">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Water Intake Calculator — Daily Hydration Target | Toolbox">
+<meta name="twitter:description" content="Free daily water-intake calculator: get a personal hydration target from your weight, activity level and climate. Local-first — your data stays in your browser.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Water Intake Calculator \u2014 Daily Hydration Target | Toolbox","url":"https://chftn.github.io/webtools/tools/water-intake/","description":"Free daily water-intake calculator: get a personal hydration target from your weight, activity level and climate. Local-first \u2014 your data stays in your browser.","inLanguage":"en","isAccessibleForFree":true,"operatingSystem":"Any","browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"applicationCategory":"HealthApplication"}</script>
+</head>
+<body>
+<div class="topbar"><div class="inner"><span class="brand">💧 Water Intake</span><span class="spacer"></span>
+<a class="back" href="../../index.html">← All tools</a></div></div>
+<div class="wrap" role="main">
+  <h1>Water Intake</h1><p class="sub">Work out a sensible daily hydration target, then log what you actually drink.</p>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="calc">Target</div>
+    <div class="tab" data-tab="log">Daily log</div>
+  </div>
+
+  <!-- ======================= TAB: TARGET ======================= -->
+  <section id="tab-calc">
+    <div class="grid two">
+      <div class="card">
+        <h2 style="margin-top:0">Your profile</h2>
+        <label for="weight">Body weight</label>
+        <div class="row">
+          <input id="weight" type="number" min="0" step="0.1" inputmode="decimal" placeholder="e.g. 72">
+          <select id="unit"><option value="kg">kg</option><option value="lb">lb</option></select>
+        </div>
+
+        <label for="activity">Daily activity (minutes of exercise)</label>
+        <input id="activity" type="number" min="0" step="5" inputmode="numeric" placeholder="e.g. 30">
+
+        <label for="climate">Climate</label>
+        <select id="climate">
+          <option value="cold">Cold</option>
+          <option value="temperate">Temperate</option>
+          <option value="hot">Hot</option>
+        </select>
+
+        <label class="check"><input type="checkbox" id="pregnant"> Pregnant</label>
+        <label class="check"><input type="checkbox" id="bf"> Breastfeeding</label>
+
+        <p class="muted" style="font-size:12px;margin-top:14px">Your profile is remembered in this browser.</p>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:0">Recommended daily intake</h2>
+        <div id="targetOut"></div>
+      </div>
+    </div>
+
+    <h2>How the number is built</h2>
+    <div id="breakdown"></div>
+    <p class="muted" style="font-size:12px">A general guide, not medical advice — thirst, urine colour and your doctor beat any formula.</p>
+  </section>
+
+  <!-- ======================= TAB: LOG ======================= -->
+  <section id="tab-log" class="hidden">
+    <div class="grid two">
+      <div class="card">
+        <h2 style="margin-top:0">Add intake</h2>
+        <label for="logDate">Date</label>
+        <input id="logDate" type="date">
+
+        <label for="amount">Amount</label>
+        <div class="row">
+          <input id="amount" type="number" min="0" step="0.1" inputmode="decimal" placeholder="e.g. 1">
+          <select id="amountUnit">
+            <option value="glass">glasses (~250 ml)</option>
+            <option value="ml">ml</option>
+            <option value="oz">fl oz</option>
+          </select>
+        </div>
+
+        <label for="note">Note (optional)</label>
+        <input id="note" type="text" maxlength="60" placeholder="e.g. after run">
+
+        <div class="actions">
+          <button class="btn primary" id="addBtn">Add</button>
+          <button class="btn sm" id="quickGlass">+1 glass today</button>
+          <button class="btn sm" id="quickBottle">+750 ml today</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:0">Progress for <span id="progDate" class="muted">—</span></h2>
+        <div id="progressOut"></div>
+      </div>
+    </div>
+
+    <div class="kpis" style="margin-top:14px" id="logKpis"></div>
+
+    <h2>Last 14 days</h2>
+    <div class="card" id="chartCard"><div id="chart"></div></div>
+
+    <h2>History</h2>
+    <div class="tablewrap" id="historyWrap"></div>
+
+    <div class="actions">
+      <button class="btn" id="exportBtn">⬇ Export CSV</button>
+      <button class="btn" id="importBtn">⬆ Import CSV</button>
+      <button class="btn bad" id="clearBtn">🗑 Clear data</button>
+    </div>
+  </section>
+
+  <footer>Data stays in this browser · <a href="../../index.html">Toolbox</a></footer>
+</div>
+
+<script src="../../assets/js/store.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- constants & state ---------------- */
+  var NS = "water-intake";              // one namespace for the whole tool
+  var ML_PER_KG = 35;                   // baseline: 35 ml per kg body weight per day
+  var ML_PER_30MIN = 350;               // extra fluid per 30 min of exercise
+  var GLASS_ML = 250;                   // "glasses" are ~250 ml
+  var OZ_ML = 29.5735;                  // 1 US fl oz in ml
+  var CLIMATE_PCT = { cold: -0.05, temperate: 0, hot: 0.15 }; // % of baseline
+  var EXTRA = { pregnant: 300, breastfeeding: 700 };         // ml/day
+
+  var DEFAULTS = {
+    profile: { weight: "", unit: "kg", activity: 30, climate: "temperate",
+               pregnant: false, breastfeeding: false },
+    log: []                              // [{id, date:"YYYY-MM-DD", ml:Number, note:String, at:Number}]
+  };
+
+  function load() {
+    var d = Store.get(NS, null);
+    if (!d || typeof d !== "object") d = {};
+    d.profile = Object.assign({}, DEFAULTS.profile, d.profile || {});
+    d.log = Array.isArray(d.log) ? d.log : [];
+    return d;
+  }
+  var DB = load();
+  function save() { Store.set(NS, DB); }
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ---------------- target maths ---------------- */
+  function targetFor(p) {
+    var w = parseFloat(p.weight);
+    if (!w || w <= 0 || isNaN(w)) return null;          // no target without a weight
+    var kg = p.unit === "lb" ? w * 0.45359237 : w;
+    var baseline = kg * ML_PER_KG;
+    var activity = (Number(p.activity) || 0) / 30 * ML_PER_30MIN;
+    var pct = CLIMATE_PCT[p.climate];
+    if (pct == null) pct = 0;
+    var climate = baseline * pct;                       // adjustment applied to baseline
+    var extra = p.breastfeeding ? EXTRA.breastfeeding : (p.pregnant ? EXTRA.pregnant : 0);
+    var total = Math.max(500, baseline + activity + climate + extra); // floor keeps it sane
+    return { kg: kg, baseline: baseline, activity: activity, climate: climate,
+             climatePct: pct, extra: extra, total: total };
+  }
+  function currentTarget() { return targetFor(DB.profile); }
+  function glasses(ml) { return ml / GLASS_ML; }
+
+  function fmtL(ml) { return Store.num(ml / 1000, 2); }
+  function fmtOz(ml) { return Store.num(ml / OZ_ML, 0); }
+  function fmtGlasses(ml) { return Store.num(glasses(ml), 1); }
+
+  /* ---------------- profile <-> form ---------------- */
+  function fillForm() {
+    var p = DB.profile;
+    $("weight").value = p.weight === "" ? "" : p.weight;
+    $("unit").value = p.unit;
+    $("activity").value = p.activity;
+    $("climate").value = p.climate;
+    $("pregnant").checked = !!p.pregnant;
+    $("bf").checked = !!p.breastfeeding;
+  }
+
+  function syncProfile() {
+    DB.profile = {
+      weight: $("weight").value,
+      unit: $("unit").value,
+      activity: $("activity").value === "" ? 0 : Number($("activity").value),
+      climate: $("climate").value,
+      pregnant: $("pregnant").checked && !$("bf").checked,   // breastfeeding wins over pregnant
+      breastfeeding: $("bf").checked
+    };
+    if (DB.profile.breastfeeding) $("pregnant").checked = false;
+    save();
+    renderTarget();
+    renderLogTab();  // targets shown in the log depend on the profile
+  }
+
+  /* ---------------- render: target tab ---------------- */
+  function renderTarget() {
+    var t = currentTarget();
+    var out = $("targetOut"), bd = $("breakdown");
+
+    if (!t) {
+      out.innerHTML = '<div class="empty">Enter your body weight to see your daily target.</div>';
+      bd.innerHTML = '<div class="tablewrap"><table><tbody><tr><td class="muted">No profile yet.</td></tr></tbody></table></div>';
+      return;
+    }
+
+    out.innerHTML =
+      '<div class="kpis">' +
+        '<div class="kpi"><div class="v">' + fmtL(t.total) + ' L</div><div class="l">per day</div></div>' +
+        '<div class="kpi"><div class="v">' + fmtOz(t.total) + ' oz</div><div class="l">fluid ounces</div></div>' +
+        '<div class="kpi"><div class="v">' + fmtGlasses(t.total) + '</div><div class="l">glasses (~250 ml)</div></div>' +
+      '</div>' +
+      '<p class="muted" style="font-size:13px;margin:14px 0 0">About <b>' + fmtGlasses(t.total) +
+      '</b> glasses, or <b>' + fmtOz(t.total) + ' fl oz</b>, spread across the day.</p>';
+
+    var rows = [
+      ["Baseline (35 ml × " + Store.num(t.kg, 1) + " kg)", "+" + Math.round(t.baseline) + " ml", "body weight"],
+      ["Activity (" + (DB.profile.activity || 0) + " min)", (t.activity >= 0 ? "+" : "") + Math.round(t.activity) + " ml",
+        "350 ml per 30 min of exercise"]
+    ];
+    if (t.climatePct !== 0) {
+      rows.push(["Climate: " + DB.profile.climate, (t.climate >= 0 ? "+" : "−") + Math.abs(Math.round(t.climate)) + " ml",
+        (t.climatePct > 0 ? "+" : "") + (t.climatePct * 100) + "% of baseline"]);
+    } else {
+      rows.push(["Climate: temperate", "0 ml", "no adjustment"]);
+    }
+    if (t.extra > 0) {
+      rows.push([DB.profile.breastfeeding ? "Breastfeeding" : "Pregnancy", "+" + t.extra + " ml", "added allowance"]);
+    }
+    if (t.total > 500) {
+      rows.push(["<b>Total</b>", "<b>" + Math.round(t.total) + " ml</b>", "<b>" + fmtL(t.total) + " L · " + fmtOz(t.total) + " oz</b>"]);
+    }
+
+    bd.innerHTML = '<div class="tablewrap"><table><thead><tr><th>Component</th><th class="num">Amount</th><th>Basis</th></tr></thead><tbody>' +
+      rows.map(function (r) { return "<tr><td>" + r[0] + "</td><td class='num'>" + r[1] + "</td><td class='muted'>" + r[2] + "</td></tr>"; }).join("") +
+      "</tbody></table></div>";
+  }
+
+  /* ---------------- log helpers ---------------- */
+  function dayTotals() {
+    var m = {};
+    DB.log.forEach(function (e) { m[e.date] = (m[e.date] || 0) + Number(e.ml || 0); });
+    return m;
+  }
+  function dayCount() { return Object.keys(dayTotals()).length; }
+
+  function pctOf(ml, target) {
+    if (!target) return 0;
+    return Math.round(ml / target * 100);
+  }
+
+  /* ---------------- render: progress card ---------------- */
+  function renderProgress() {
+    var date = $("logDate").value || Store.today();
+    var t = currentTarget();
+    var ml = dayTotals()[date] || 0;
+    $("progDate").textContent = date;
+
+    if (!t) {
+      $("progressOut").innerHTML = '<div class="empty">Set your body weight on the <b>Target</b> tab to see progress.</div>';
+      return;
+    }
+    var pct = pctOf(ml, t.total);
+    var w = Math.max(0, Math.min(100, pct));
+    var left = Math.max(0, t.total - ml);
+    var cls = pct >= 100 ? "pos" : (pct >= 60 ? "" : "neg");
+    $("progressOut").innerHTML =
+      '<div class="bar"><span style="width:' + w + '%;background:' +
+        (pct >= 100 ? "var(--accent2)" : "var(--accent)") + '"></span></div>' +
+      '<div class="kpis" style="margin-top:12px">' +
+        '<div class="kpi"><div class="v">' + fmtL(ml) + ' L</div><div class="l">logged</div></div>' +
+        '<div class="kpi"><div class="v">' + fmtL(t.total) + ' L</div><div class="l">target</div></div>' +
+        '<div class="kpi"><div class="v ' + cls + '">' + pct + '%</div><div class="l">complete</div></div>' +
+      '</div>' +
+      '<p class="muted" style="font-size:13px;margin:14px 0 0">' +
+        (pct >= 100
+          ? "Target met — " + fmtL(ml - t.total) + " L over."
+          : fmtGlasses(left) + " glasses (~" + Math.round(left) + " ml) still to go.") +
+      '</p>' +
+      '<p class="muted" style="font-size:13px">' + fmtGlasses(ml) + " glasses logged.</p>";
+  }
+
+  /* ---------------- render: log KPIs ---------------- */
+  function renderLogKpis() {
+    var t = currentTarget();
+    var totals = dayTotals();
+    var dates = Object.keys(totals).sort();
+    var el = $("logKpis");
+
+    if (!DB.log.length) {
+      el.innerHTML = '<div class="kpi"><div class="v">0</div><div class="l">entries</div></div>' +
+        '<div class="kpi"><div class="v muted">—</div><div class="l">7-day average</div></div>' +
+        '<div class="kpi"><div class="v muted">—</div><div class="l">best day</div></div>' +
+        '<div class="kpi"><div class="v muted">—</div><div class="l">days on target</div></div>';
+      return;
+    }
+
+    // 7-day average across days that actually have entries
+    var last7 = dates.slice(-7);
+    var avg = last7.reduce(function (s, d) { return s + totals[d]; }, 0) / (last7.length || 1);
+    var best = dates.reduce(function (a, d) { return totals[d] > (totals[a] || 0) ? d : a; }, dates[0]);
+    var onTarget = t ? dates.filter(function (d) { return totals[d] >= t.total; }).length : 0;
+
+    el.innerHTML =
+      '<div class="kpi"><div class="v">' + DB.log.length + '</div><div class="l">entries</div></div>' +
+      '<div class="kpi"><div class="v">' + fmtL(avg) + ' L</div><div class="l">7-day average</div></div>' +
+      '<div class="kpi"><div class="v">' + fmtL(totals[best]) + ' L</div><div class="l">best day (' + Store.esc(best) + ')</div></div>' +
+      '<div class="kpi"><div class="v">' + (t ? onTarget + ' / ' + dates.length : '—') + '</div><div class="l">days on target</div></div>';
+  }
+
+  /* ---------------- render: SVG bar chart (last 14 days) ---------------- */
+  function renderChart() {
+    var t = currentTarget();
+    var totals = dayTotals();
+    var days = [];
+    var base = new Date(Store.today() + "T00:00:00");
+    for (var i = 13; i >= 0; i--) {
+      var d = new Date(base.getTime() - i * 86400000);
+      var key = Store.date(d);
+      days.push({ date: key, ml: totals[key] || 0 });
+    }
+    var target = t ? t.total : 0;
+    var max = Math.max(target, 1);
+    days.forEach(function (d) { if (d.ml > max) max = d.ml; });
+    max = max * 1.15;
+
+    var W = 728, H = 200, padL = 8, padR = 8, padTop = 18, padBot = 26;
+    var inner = W - padL - padR;
+    var step = inner / days.length;
+    var bw = Math.max(6, step * 0.6);
+    var plotH = H - padTop - padBot;
+
+    var parts = ['<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="200" role="img" aria-label="Intake over the last 14 days" style="display:block">'];
+    // target line
+    if (target) {
+      var ty = padTop + plotH - (target / max) * plotH;
+      parts.push('<line x1="' + padL + '" y1="' + ty.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + ty.toFixed(1) +
+        '" stroke="#f2b13a" stroke-dasharray="5 4" stroke-width="1.5"/>');
+      parts.push('<text x="' + (W - padR) + '" y="' + (ty - 5).toFixed(1) + '" fill="#5f7b8c" font-size="11" text-anchor="end">target ' + fmtL(target) + ' L</text>');
+    }
+    days.forEach(function (d, i) {
+      var h = (d.ml / max) * plotH;
+      var x = padL + i * step + (step - bw) / 2;
+      var y = padTop + plotH - h;
+      var hit = target && d.ml >= target;
+      parts.push('<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(1, h).toFixed(1) +
+        '" rx="3" fill="' + (hit ? "#38e0a0" : "#22d3ee") + '" opacity="' + (d.ml ? .95 : .25) + '"><title>' +
+        Store.esc(d.date) + ': ' + Math.round(d.ml) + ' ml</title></rect>');
+      if (d.ml) {
+        parts.push('<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (y - 4).toFixed(1) + '" fill="#5f7b8c" font-size="10" text-anchor="middle">' +
+          (d.ml / 1000).toFixed(1) + '</text>');
+      }
+      // label every other day to stay legible on small screens
+      if (i % 2 === 0 || i === days.length - 1) {
+        parts.push('<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - 8) + '" fill="#5f7b8c" font-size="10" text-anchor="middle">' +
+          Store.esc(d.date.slice(8)) + '</text>');
+      }
+    });
+    parts.push("</svg>");
+    $("chart").innerHTML = parts.join("");
+  }
+
+  /* ---------------- render: history table ---------------- */
+  function renderHistory() {
+    var t = currentTarget();
+    var totals = dayTotals();
+    var dates = Object.keys(totals).sort().reverse();
+    var wrap = $("historyWrap");
+
+    if (!dates.length) {
+      wrap.innerHTML = '<div class="empty">No entries yet. Add your first glass of water above.</div>';
+      return;
+    }
+
+    var rows = dates.map(function (d) {
+      var ml = totals[d];
+      var pct = t ? pctOf(ml, t.total) : null;
+      var cnt = DB.log.filter(function (e) { return e.date === d; }).length;
+      var entries = DB.log.filter(function (e) { return e.date === d; });
+      var detail = entries.map(function (e) {
+        return '<span class="pill" style="display:inline-flex;gap:6px;align-items:center;margin:3px 4px 3px 0">' +
+          Math.round(e.ml) + " ml" + (e.note ? " · " + Store.esc(e.note) : "") +
+          '<button class="btn sm bad" data-del="' + e.id + '">Delete</button></span>';
+      }).join("");
+
+      return '<tr data-day="' + Store.esc(d) + '">' +
+        '<td>' + Store.esc(d) + (d === Store.today() ? ' <span class="pill">today</span>' : "") + "</td>" +
+        '<td class="num">' + Math.round(ml) + " ml</td>" +
+        '<td class="num">' + fmtGlasses(ml) + "</td>" +
+        '<td class="num">' + (pct == null ? '<span class="muted">—</span>' :
+          '<span class="' + (pct >= 100 ? "pos" : "") + '">' + pct + "%</span>") + "</td>" +
+        '<td class="num">' + cnt + "</td>" +
+        '<td class="num"><button class="btn sm" data-toggle="' + Store.esc(d) + '">Details</button> ' +
+          '<button class="btn sm bad" data-clearday="' + Store.esc(d) + '">Delete</button></td>' +
+      "</tr>" +
+      '<tr class="hidden" data-detail="' + Store.esc(d) + '"><td colspan="6">' + detail + "</td></tr>";
+    }).join("");
+
+    wrap.innerHTML = '<table><thead><tr><th>Date</th><th class="num">Total</th><th class="num">Glasses</th>' +
+      '<th class="num">% of target</th><th class="num">Entries</th><th class="num"></th></tr></thead><tbody>' +
+      rows + "</tbody></table>";
+  }
+
+  /* ---------------- master render ---------------- */
+  function renderTargetTab() { renderTarget(); }
+  function renderLogTab() {
+    renderProgress(); renderLogKpis(); renderChart(); renderHistory();
+  }
+  function renderAll() { renderTargetTab(); if (!DB.log.length) { /* still fine */ } renderLogTab(); }
+
+  /* ---------------- mutations ---------------- */
+  function addEntry(date, ml, note) {
+    ml = Math.round(ml);
+    if (!date) { Store.toast("Pick a date first"); return false; }
+    if (!ml || ml <= 0) { Store.toast("Enter an amount greater than 0"); return false; }
+    DB.log.push({ id: Store.uid(), date: date, ml: ml, note: note || "", at: Date.now() });
+    save();
+    renderLogTab();
+    return true;
+  }
+
+  function toMl(value, unit) {
+    if (unit === "ml") return Number(value);
+    if (unit === "oz") return Number(value) * OZ_ML;
+    return Number(value) * GLASS_ML;    // glasses
+  }
+
+  /* ---------------- CSV ---------------- */
+  function exportLog() {
+    if (!DB.log.length) { Store.toast("Nothing to export yet"); return; }
+    var t = currentTarget();
+    var rows = DB.log.slice().sort(function (a, b) {
+      return a.date === b.date ? a.at - b.at : (a.date < b.date ? -1 : 1);
+    }).map(function (e) {
+      return {
+        date: e.date,
+        ml: e.ml,
+        glasses: (glasses(e.ml)).toFixed(2),
+        oz: (e.ml / OZ_ML).toFixed(1),
+        pct_of_target: t ? pctOf(e.ml, t.total) : "",
+        note: e.note || ""
+      };
+    });
+    Store.exportCSV("water-intake-log", rows, ["date", "ml", "glasses", "oz", "pct_of_target", "note"]);
+  }
+
+  function importLog(objs) {
+    var added = 0, skipped = 0;
+    objs.forEach(function (o) {
+      var date = (o.date || o.Date || "").trim().slice(0, 10);
+      var ml = o.ml != null && o.ml !== "" ? Number(o.ml)
+             : (o.glasses != null && o.glasses !== "" ? Number(o.glasses) * GLASS_ML
+             : (o.oz != null && o.oz !== "" ? Number(o.oz) * OZ_ML : NaN));
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !isFinite(ml) || ml <= 0) { skipped++; return; }
+      DB.log.push({ id: Store.uid(), date: date, ml: Math.round(ml), note: (o.note || "").slice(0, 60), at: Date.now() });
+      added++;
+    });
+    save();
+    renderLogTab();
+    Store.toast("Imported " + added + " entr" + (added === 1 ? "y" : "ies") + (skipped ? " · " + skipped + " skipped" : ""));
+  }
+
+  /* ---------------- events ---------------- */
+  // tabs
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (tab) {
+    tab.addEventListener("click", function () {
+      Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (x) { x.classList.remove("active"); });
+      tab.classList.add("active");
+      var which = tab.getAttribute("data-tab");
+      $("tab-calc").classList.toggle("hidden", which !== "calc");
+      $("tab-log").classList.toggle("hidden", which !== "log");
+      if (which === "log") renderLogTab();
+    });
+  });
+
+  // profile inputs — persist on every change
+  ["weight", "unit", "activity", "climate", "pregnant", "bf"].forEach(function (id) {
+    var el = $(id);
+    el.addEventListener("input", syncProfile);
+    el.addEventListener("change", syncProfile);
+  });
+
+  // add entry
+  $("addBtn").addEventListener("click", function () {
+    var date = $("logDate").value || Store.today();
+    var unit = $("amountUnit").value;
+    var ml = toMl($("amount").value, unit);
+    if (addEntry(date, ml, $("note").value.trim())) {
+      $("amount").value = "";
+      $("note").value = "";
+      Store.toast("Added " + Math.round(ml) + " ml to " + date);
+    }
+  });
+
+  function quickAdd(ml) {
+    $("logDate").value = Store.today();
+    if (addEntry(Store.today(), ml, "")) Store.toast("Added " + ml + " ml to today");
+  }
+  $("quickGlass").addEventListener("click", function () { quickAdd(GLASS_ML); });
+  $("quickBottle").addEventListener("click", function () { quickAdd(750); });
+
+  $("logDate").addEventListener("change", renderProgress);
+
+  // history interactions (delegated)
+  $("historyWrap").addEventListener("click", function (ev) {
+    var btn = ev.target.closest ? ev.target.closest("button") : null;
+    if (!btn) return;
+    var id = btn.getAttribute("data-del");
+    var day = btn.getAttribute("data-clearday");
+    var tog = btn.getAttribute("data-toggle");
+
+    if (id) {
+      DB.log = DB.log.filter(function (e) { return e.id !== id; });
+      save(); renderLogTab(); Store.toast("Entry deleted");
+      return;
+    }
+    if (day) {
+      if (!confirm("Delete all entries for " + day + "?")) return;
+      DB.log = DB.log.filter(function (e) { return e.date !== day; });
+      save(); renderLogTab(); Store.toast("Day cleared");
+      return;
+    }
+    if (tog) {
+      var row = $("historyWrap").querySelector('tr[data-detail="' + tog + '"]');
+      if (row) row.classList.toggle("hidden");
+    }
+  });
+
+  $("exportBtn").addEventListener("click", exportLog);
+  $("importBtn").addEventListener("click", function () { Store.importCSV(importLog); });
+  $("clearBtn").addEventListener("click", function () {
+    if (!confirm("Clear your water profile and the entire drink log? This cannot be undone.")) return;
+    DB = JSON.parse(JSON.stringify(DEFAULTS));
+    save();
+    fillForm();
+    $("logDate").value = Store.today();
+    renderAll();
+    Store.toast("All data cleared");
+  });
+
+  /* ---------------- init ---------------- */
+  fillForm();
+  $("logDate").value = Store.today();
+  renderAll();
+})();
+</script>
+</body></html>

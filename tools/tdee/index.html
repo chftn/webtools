@@ -1,0 +1,595 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+<title>TDEE &amp; Macro Calculator — Daily Calorie Target | Toolbox</title>
+<link rel="stylesheet" href="../../assets/css/base.css">
+<meta name="description" content="Free TDEE and macro calculator: estimate your daily calorie target from BMR and activity level, with a protein, carbohydrate and fat split. Private and local-first.">
+<meta name="keywords" content="TDEE calculator, macro calculator, daily calorie target, BMR, protein carbs fat split, calorie deficit">
+<meta name="author" content="ATLAS / George">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#070b12">
+<link rel="canonical" href="https://chftn.github.io/webtools/tools/tdee/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Toolbox">
+<meta property="og:title" content="TDEE &amp; Macro Calculator — Daily Calorie Target | Toolbox">
+<meta property="og:description" content="Free TDEE and macro calculator: estimate your daily calorie target from BMR and activity level, with a protein, carbohydrate and fat split. Private and local-first.">
+<meta property="og:url" content="https://chftn.github.io/webtools/tools/tdee/">
+<meta property="og:locale" content="en_AU">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="TDEE &amp; Macro Calculator — Daily Calorie Target | Toolbox">
+<meta name="twitter:description" content="Free TDEE and macro calculator: estimate your daily calorie target from BMR and activity level, with a protein, carbohydrate and fat split. Private and local-first.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TDEE & Macro Calculator \u2014 Daily Calorie Target | Toolbox","url":"https://chftn.github.io/webtools/tools/tdee/","description":"Free TDEE and macro calculator: estimate your daily calorie target from BMR and activity level, with a protein, carbohydrate and fat split. Private and local-first.","inLanguage":"en","isAccessibleForFree":true,"operatingSystem":"Any","browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"applicationCategory":"HealthApplication"}</script>
+</head>
+<body>
+<div class="topbar"><div class="inner"><span class="brand">🥗 TDEE &amp; Macros</span><span class="spacer"></span>
+<a class="back" href="../../index.html">← All tools</a></div></div>
+<div class="wrap" role="main">
+  <h1>TDEE &amp; Macros</h1>
+  <p class="sub">Estimate daily energy needs (BMR → TDEE → goal calories) and a macro split. Everything stays in this browser.</p>
+
+  <div class="grid two">
+    <!-- ============ INPUTS ============ -->
+    <div class="card">
+      <h2 style="margin-top:0">About you</h2>
+
+      <label for="sex">Sex</label>
+      <select id="sex">
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+      </select>
+
+      <label for="age">Age (years)</label>
+      <input id="age" type="number" min="10" max="120" step="1" inputmode="numeric" placeholder="e.g. 30">
+
+      <label>Height</label>
+      <div class="row">
+        <select id="heightUnit" aria-label="Height unit">
+          <option value="cm">cm</option>
+          <option value="ft">ft / in</option>
+        </select>
+        <input id="cm" type="number" min="60" max="260" step="0.5" inputmode="decimal" placeholder="cm" aria-label="Height in centimetres">
+      </div>
+      <div class="row hidden" id="ftRow">
+        <input id="ft" type="number" min="2" max="8" step="1" inputmode="numeric" placeholder="ft" aria-label="Height feet">
+        <input id="inch" type="number" min="0" max="11.9" step="0.5" inputmode="decimal" placeholder="in" aria-label="Height inches">
+      </div>
+
+      <label>Weight</label>
+      <div class="row">
+        <select id="weightUnit" aria-label="Weight unit">
+          <option value="kg">kg</option>
+          <option value="lb">lb</option>
+        </select>
+        <input id="kg" type="number" min="20" max="400" step="0.1" inputmode="decimal" placeholder="kg" aria-label="Weight in kilograms">
+      </div>
+      <div class="row hidden" id="lbRow">
+        <input id="lb" type="number" min="44" max="880" step="0.1" inputmode="decimal" placeholder="lb" aria-label="Weight in pounds">
+      </div>
+
+      <label for="activity">Activity level</label>
+      <select id="activity"></select>
+
+      <label for="goal">Goal</label>
+      <select id="goal">
+        <option value="cut">Cut — lose fat</option>
+        <option value="maintain">Maintain — stay the same</option>
+        <option value="bulk">Bulk — build muscle</option>
+      </select>
+
+      <label for="adjustPct">Goal adjustment (%) — negative = deficit</label>
+      <input id="adjustPct" type="number" min="-40" max="40" step="1" inputmode="numeric">
+      <p class="muted" style="font-size:12px;margin:6px 0 0" id="adjustHint"></p>
+
+      <label for="preset">Macro split preset</label>
+      <select id="preset"></select>
+
+      <div class="actions">
+        <button class="btn sm" id="resetForm" type="button">Reset inputs</button>
+      </div>
+      <p class="muted" id="formMsg" style="font-size:13px"></p>
+    </div>
+
+    <!-- ============ RESULTS ============ -->
+    <div class="card">
+      <h2 style="margin-top:0">Daily energy</h2>
+      <div class="kpis" id="kpis"></div>
+      <p class="muted hidden" id="resultMsg" style="font-size:13px;margin:12px 0 0"></p>
+
+      <h3>Breakdown</h3>
+      <div class="tablewrap"><table id="breakdown"><tbody></tbody></table></div>
+
+      <h3>Macros <span class="muted" id="macroName" style="font-weight:400"></span></h3>
+      <div id="macroBars"></div>
+      <div class="tablewrap" style="margin-top:10px"><table id="macroTable"><tbody></tbody></table></div>
+
+      <div class="actions">
+        <button class="btn sm" id="copyBtn" type="button">Copy summary</button>
+      </div>
+      <p class="muted" style="font-size:12px;margin:8px 0 0">
+        Estimates only — not medical advice. Formulae and activity multipliers are population averages;
+        individual needs vary. Consult a qualified professional before changing your diet.
+      </p>
+    </div>
+  </div>
+
+  <!-- ============ PROFILES ============ -->
+  <h2>Saved profiles</h2>
+  <div class="card">
+    <div class="row">
+      <input id="profileName" placeholder="Profile name (e.g. cut – spring)" aria-label="Profile name">
+      <button class="btn primary" id="saveProfile" type="button">Save current</button>
+    </div>
+
+    <div class="actions">
+      <button class="btn sm" id="exportBtn" type="button">⬇ Export CSV</button>
+      <button class="btn sm" id="importBtn" type="button">⬆ Import CSV</button>
+      <button class="btn sm bad" id="clearBtn" type="button">🗑 Clear data</button>
+    </div>
+
+    <div class="tablewrap" id="profileWrap">
+      <table>
+        <thead><tr>
+          <th>Name</th><th>Sex</th><th class="num">Age</th><th class="num">BMR</th>
+          <th class="num">TDEE</th><th class="num">Target</th><th class="num">P/C/F (g)</th><th>Saved</th><th></th>
+        </tr></thead>
+        <tbody id="profileRows"></tbody>
+      </table>
+    </div>
+    <div class="empty hidden" id="profileEmpty">No profiles yet — set up your numbers and press “Save current”.</div>
+  </div>
+
+  <footer>Data stays in this browser · <a href="../../index.html">Toolbox</a></footer>
+</div>
+
+<script src="../../assets/js/store.js"></script>
+<script>
+"use strict";
+(function () {
+  /* ---------------- constants ---------------- */
+  const NS = "tdee";
+
+  // Harris-style activity multipliers applied to BMR.
+  const ACTIVITY = [
+    { id: "sedentary", label: "Sedentary — little or no exercise", f: 1.2 },
+    { id: "light",     label: "Light — exercise 1–3 days/week",    f: 1.375 },
+    { id: "moderate",  label: "Moderate — exercise 3–5 days/week", f: 1.55 },
+    { id: "active",    label: "Active — exercise 6–7 days/week",   f: 1.725 },
+    { id: "athlete",   label: "Athlete — 2× training/day or physical job", f: 1.9 }
+  ];
+
+  // Macro presets as % of target calories (protein/carbs/fat).
+  const PRESETS = {
+    balanced:    { label: "Balanced (30/40/30)",     p: 30, c: 40, f: 30 },
+    highprotein: { label: "High-protein (40/35/25)", p: 40, c: 35, f: 25 },
+    lowcarb:     { label: "Low-carb (30/20/50)",     p: 30, c: 20, f: 50 }
+  };
+
+  const GOAL_ADJUST = { cut: -20, maintain: 0, bulk: 20 };
+  const KG_PER_LB = 0.45359237;
+  const KCAL_PER_G = { p: 4, c: 4, f: 9 };
+
+  const DEFAULTS = {
+    form: {
+      sex: "male", age: 30,
+      heightUnit: "cm", cm: 175, ft: 5, inch: 9,
+      weightUnit: "kg", kg: 75, lb: 165,
+      activity: "moderate", goal: "maintain", adjustPct: 0, preset: "balanced"
+    },
+    profiles: []
+  };
+
+  /* ---------------- state ---------------- */
+  // Load once; normalise so a partial/old stored shape can't break the page.
+  function loadState() {
+    const raw = Store.get(NS, null);
+    const s = { form: Object.assign({}, DEFAULTS.form), profiles: [] };
+    if (raw && typeof raw === "object") {
+      if (raw.form && typeof raw.form === "object") Object.assign(s.form, raw.form);
+      if (Array.isArray(raw.profiles)) s.profiles = raw.profiles;
+    }
+    return s;
+  }
+  let state = loadState();
+  function persist() { Store.set(NS, state); }
+
+  /* ---------------- dom refs ---------------- */
+  const $ = (id) => document.getElementById(id);
+  const el = {
+    sex: $("sex"), age: $("age"),
+    heightUnit: $("heightUnit"), cm: $("cm"), ftRow: $("ftRow"), ft: $("ft"), inch: $("inch"),
+    weightUnit: $("weightUnit"), kg: $("kg"), lbRow: $("lbRow"), lb: $("lb"),
+    activity: $("activity"), goal: $("goal"), adjustPct: $("adjustPct"), adjustHint: $("adjustHint"),
+    preset: $("preset"),
+    kpis: $("kpis"), resultMsg: $("resultMsg"),
+    breakdown: $("breakdown").querySelector("tbody"),
+    macroName: $("macroName"), macroBars: $("macroBars"),
+    macroTable: $("macroTable").querySelector("tbody"),
+    formMsg: $("formMsg"),
+    profileName: $("profileName"), profileRows: $("profileRows"),
+    profileEmpty: $("profileEmpty"), profileWrap: $("profileWrap")
+  };
+
+  /* ---------------- populate static selects ---------------- */
+  ACTIVITY.forEach(a => {
+    const o = document.createElement("option");
+    o.value = a.id; o.textContent = a.label; el.activity.appendChild(o);
+  });
+  Object.keys(PRESETS).forEach(k => {
+    const o = document.createElement("option");
+    o.value = k; o.textContent = PRESETS[k].label; el.preset.appendChild(o);
+  });
+
+  /* ---------------- form <-> state ---------------- */
+  const numOr = (v, d) => { const n = parseFloat(v); return isFinite(n) ? n : d; };
+
+  function renderForm() {
+    const f = state.form;
+    el.sex.value = f.sex;
+    el.age.value = f.age === "" ? "" : f.age;
+    el.heightUnit.value = f.heightUnit;
+    el.cm.value = f.cm;
+    el.ft.value = f.ft; el.inch.value = f.inch;
+    el.weightUnit.value = f.weightUnit;
+    el.kg.value = f.kg; el.lb.value = f.lb;
+    el.activity.value = f.activity;
+    el.goal.value = f.goal;
+    el.adjustPct.value = f.adjustPct;
+    el.preset.value = f.preset;
+    toggleUnits();
+  }
+
+  function toggleUnits() {
+    const hIsCm = el.heightUnit.value === "cm";
+    el.cm.classList.toggle("hidden", !hIsCm);
+    el.ftRow.classList.toggle("hidden", hIsCm);
+    const wIsKg = el.weightUnit.value === "kg";
+    el.kg.classList.toggle("hidden", !wIsKg);
+    el.lbRow.classList.toggle("hidden", wIsKg);
+  }
+
+  // Read the raw DOM into a form object (empty/NaN inputs stay as "" so validation can flag them).
+  function readForm() {
+    const d = DEFAULTS.form;
+    return {
+      sex: el.sex.value,
+      age: el.age.value === "" ? "" : numOr(el.age.value, ""),
+      heightUnit: el.heightUnit.value,
+      cm: el.cm.value === "" ? "" : numOr(el.cm.value, d.cm),
+      ft: numOr(el.ft.value, d.ft),
+      inch: numOr(el.inch.value, d.inch),
+      weightUnit: el.weightUnit.value,
+      kg: el.kg.value === "" ? "" : numOr(el.kg.value, d.kg),
+      lb: numOr(el.lb.value, d.lb),
+      activity: el.activity.value,
+      goal: el.goal.value,
+      adjustPct: numOr(el.adjustPct.value, 0),
+      preset: el.preset.value
+    };
+  }
+
+  /* ---------------- maths ---------------- */
+  function toCm(f) {
+    return f.heightUnit === "cm" ? f.cm : (f.ft * 30.48 + f.inch * 2.54);
+  }
+  function toKg(f) {
+    return f.weightUnit === "kg" ? f.kg : f.lb * KG_PER_LB;
+  }
+
+  // Returns {ok, errors[], ...results}
+  function calculate(f) {
+    const errors = [];
+    const age = Number(f.age);
+    if (f.age === "" || !isFinite(age) || age < 10 || age > 120) errors.push("Enter an age between 10 and 120.");
+    const cm = toCm(f);
+    if (!isFinite(cm) || cm < 60 || cm > 260) errors.push("Enter a height between 60 and 260 cm.");
+    const kg = toKg(f);
+    if (!isFinite(kg) || kg < 20 || kg > 400) errors.push("Enter a weight between 20 and 400 kg.");
+    if (errors.length) return { ok: false, errors: errors };
+
+    // Mifflin-St Jeor; +5 male / −161 female.
+    const sexAdj = f.sex === "male" ? 5 : -161;
+    const bmr = 10 * kg + 6.25 * cm - 5 * age + sexAdj;
+    const act = ACTIVITY.filter(a => a.id === f.activity)[0] || ACTIVITY[2];
+    const tdee = bmr * act.f;
+    const adj = Math.max(-40, Math.min(40, Number(f.adjustPct) || 0));
+    const target = tdee * (1 + adj / 100);
+    const p = PRESETS[f.preset] || PRESETS.balanced;
+    const macros = [
+      { key: "p", name: "Protein", pct: p.p, grams: (target * p.p / 100) / KCAL_PER_G.p },
+      { key: "c", name: "Carbs",   pct: p.c, grams: (target * p.c / 100) / KCAL_PER_G.c },
+      { key: "f", name: "Fat",     pct: p.f, grams: (target * p.f / 100) / KCAL_PER_G.f }
+    ];
+    const bmi = kg / Math.pow(cm / 100, 2);
+    return {
+      ok: true, errors: [], age: age, cm: cm, kg: kg, lb: kg / KG_PER_LB,
+      bmr: bmr, act: act, tdee: tdee, adj: adj, target: target,
+      preset: p, macros: macros, bmi: bmi,
+      proteinPerKg: macros[0].grams / kg
+    };
+  }
+
+  /* ---------------- rendering ---------------- */
+  function kpi(v, l) {
+    return '<div class="kpi"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>';
+  }
+
+  function render(f) {
+    const r = calculate(f);
+    state.form = f; persist();
+
+    if (!r.ok) {
+      el.kpis.innerHTML = kpi("—", "BMR") + kpi("—", "TDEE") + kpi("—", "Target kcal") + kpi("—", "BMI");
+      el.breakdown.innerHTML = '<tr><td colspan="2" class="muted">Fill in your details to see the breakdown.</td></tr>';
+      el.macroBars.innerHTML = "";
+      el.macroTable.innerHTML = "";
+      el.macroName.textContent = "";
+      el.formMsg.textContent = r.errors.join(" ");
+      el.resultMsg.classList.add("hidden");
+      return;
+    }
+
+    el.formMsg.textContent = "";
+    el.kpis.innerHTML =
+      kpi(Store.num(r.bmr, 0), "BMR kcal/day") +
+      kpi(Store.num(r.tdee, 0), "TDEE kcal/day") +
+      kpi('<span class="' + (r.adj < 0 ? "neg" : r.adj > 0 ? "pos" : "") + '">' + Store.num(r.target, 0) + "</span>", "Target kcal/day") +
+      kpi(Store.num(r.bmi, 1), "BMI");
+
+    // Breakdown: show each step so the number is traceable.
+    const unitNote = (state.form.heightUnit === "ft" ? Store.num(r.cm, 1) + " cm" : Store.num(r.cm, 0) + " cm") +
+      " · " + Store.num(r.kg, 1) + " kg / " + Store.num(r.lb, 1) + " lb";
+    el.breakdown.innerHTML =
+      "<tr><td>Formula</td><td class='num'>Mifflin-St Jeor</td></tr>" +
+      "<tr><td>Your stats</td><td class='num'>" + r.age + " y · " + unitNote + "</td></tr>" +
+      "<tr><td>BMR (10×kg + 6.25×cm − 5×age " + (state.form.sex === "male" ? "+ 5" : "− 161") + ")</td><td class='num'>" + Store.num(r.bmr, 0) + " kcal</td></tr>" +
+      "<tr><td>Activity factor (" + r.act.id + ")</td><td class='num'>× " + r.act.f + "</td></tr>" +
+      "<tr><td><strong>TDEE (maintenance)</strong></td><td class='num'><strong>" + Store.num(r.tdee, 0) + " kcal</strong></td></tr>" +
+      "<tr><td>Goal adjustment</td><td class='num'>" + (r.adj > 0 ? "+" : "") + r.adj + "% (" + (r.adj < 0 ? "−" : r.adj > 0 ? "+" : "") + Store.num(Math.abs(r.tdee * r.adj / 100), 0) + " kcal)</td></tr>" +
+      "<tr><td><strong>Daily target</strong></td><td class='num'><strong>" + Store.num(r.target, 0) + " kcal</strong></td></tr>";
+
+    el.macroName.textContent = "— " + r.preset.label;
+
+    const colors = { p: "var(--accent)", c: "var(--accent2)", f: "var(--warn)" };
+    el.macroBars.innerHTML = r.macros.map(m =>
+      '<div style="margin:10px 0">' +
+        '<div class="muted" style="font-size:12px;display:flex;justify-content:space-between">' +
+          "<span>" + m.name + " · " + m.pct + "%</span>" +
+          "<span>" + Store.num(m.grams, 0) + " g · " + Store.num(m.pct * r.target / 100, 0) + " kcal</span>" +
+        "</div>" +
+        '<div class="bar" style="margin-top:4px"><span style="width:' + m.pct + "%;background:" + colors[m.key] + '"></span></div>' +
+      "</div>").join("");
+
+    el.macroTable.innerHTML =
+      "<tr><th>Macro</th><th class='num'>% kcal</th><th class='num'>Grams</th><th class='num'>Per kg BW</th></tr>" +
+      r.macros.map(m =>
+        "<tr><td>" + m.name + "</td><td class='num'>" + m.pct + "</td><td class='num'>" + Store.num(m.grams, 0) +
+        "</td><td class='num'>" + Store.num(m.grams / r.kg, 1) + " g</td></tr>").join("") +
+      "<tr><td class='muted'>Total</td><td class='num muted'>100</td><td class='num muted'>" +
+        Store.num(r.macros.reduce((s, m) => s + m.grams, 0), 0) + "</td><td class='num muted'>—</td></tr>";
+
+    // Safety-oriented flags — informational, not advice.
+    const msgs = [];
+    const floor = state.form.sex === "male" ? 1500 : 1200;
+    if (r.target < floor) msgs.push("Target is below " + floor + " kcal — very low intakes should only be done under professional supervision.");
+    if (r.bmi < 18.5) msgs.push("BMI " + Store.num(r.bmi, 1) + " is in the underweight range; a cut is rarely appropriate.");
+    if (r.bmi >= 30) msgs.push("BMI " + Store.num(r.bmi, 1) + " is in the obese range; consider professional guidance.");
+    if (r.adj < 0 && r.adj < -25) msgs.push("A deficit larger than 25% is hard to sustain and risks muscle loss.");
+    el.resultMsg.innerHTML = msgs.map(m => "⚠️ " + Store.esc(m)).join("<br>");
+    el.resultMsg.classList.toggle("hidden", msgs.length === 0);
+  }
+
+  /* ---------------- profiles ---------------- */
+  function renderProfiles() {
+    const rows = state.profiles;
+    el.profileEmpty.classList.toggle("hidden", rows.length > 0);
+    el.profileWrap.classList.toggle("hidden", rows.length === 0);
+    el.profileRows.innerHTML = rows.map(p =>
+      "<tr>" +
+        "<td>" + Store.esc(p.name) + "</td>" +
+        "<td>" + (p.sex === "male" ? "M" : "F") + "</td>" +
+        "<td class='num'>" + Store.num(p.age, 0) + "</td>" +
+        "<td class='num'>" + Store.num(p.bmr, 0) + "</td>" +
+        "<td class='num'>" + Store.num(p.tdee, 0) + "</td>" +
+        "<td class='num'>" + Store.num(p.target, 0) + "</td>" +
+        "<td class='num'>" + Store.num(p.protein, 0) + " / " + Store.num(p.carbs, 0) + " / " + Store.num(p.fat, 0) + "</td>" +
+        "<td class='muted'>" + Store.esc(p.savedAt || "") + "</td>" +
+        "<td style='white-space:nowrap'>" +
+          "<button class='btn sm' data-load='" + p.id + "'>Load</button> " +
+          "<button class='btn sm bad' data-del='" + p.id + "'>Delete</button>" +
+        "</td>" +
+      "</tr>").join("");
+  }
+
+  function saveProfile() {
+    const r = calculate(readForm());
+    if (!r.ok) { Store.toast("Fix the inputs first"); el.formMsg.textContent = r.errors.join(" "); return; }
+    const name = (el.profileName.value || "").trim() ||
+      (state.form.goal.charAt(0).toUpperCase() + state.form.goal.slice(1) + " " + Store.num(r.target, 0) + " kcal");
+    const f = state.form;
+    const p = {
+      id: Store.uid(), name: name,
+      sex: f.sex, age: r.age, heightCm: Number(r.cm.toFixed(1)), weightKg: Number(r.kg.toFixed(1)),
+      activity: f.activity, goal: f.goal, adjustPct: r.adj, preset: f.preset,
+      bmr: Math.round(r.bmr), tdee: Math.round(r.tdee), target: Math.round(r.target),
+      protein: Math.round(r.macros[0].grams), carbs: Math.round(r.macros[1].grams), fat: Math.round(r.macros[2].grams),
+      bmi: Number(r.bmi.toFixed(1)),
+      savedAt: Store.today()
+    };
+    // Same name overwrites, so re-saving an updated profile doesn't duplicate.
+    state.profiles = state.profiles.filter(x => x.name.toLowerCase() !== name.toLowerCase());
+    state.profiles.push(p);
+    persist(); renderProfiles();
+    el.profileName.value = "";
+    Store.toast("Saved “" + name + "”");
+  }
+
+  function loadProfile(id) {
+    const p = state.profiles.filter(x => x.id === id)[0];
+    if (!p) return;
+    state.form = Object.assign({}, state.form, {
+      sex: p.sex, age: p.age,
+      heightUnit: "cm", cm: p.heightCm,
+      weightUnit: "kg", kg: p.weightKg,
+      activity: p.activity, goal: p.goal,
+      adjustPct: p.adjustPct == null ? (GOAL_ADJUST[p.goal] || 0) : p.adjustPct,
+      preset: p.preset
+    });
+    renderForm(); render(readForm());
+    Store.toast("Loaded “" + p.name + "”");
+  }
+
+  function deleteProfile(id) {
+    const p = state.profiles.filter(x => x.id === id)[0];
+    if (!p) return;
+    if (!confirm("Delete profile “" + p.name + "”?")) return;
+    state.profiles = state.profiles.filter(x => x.id !== id);
+    persist(); renderProfiles();
+    Store.toast("Deleted");
+  }
+
+  /* ---------------- csv ---------------- */
+  const CSV_COLS = ["name", "sex", "age", "heightCm", "weightKg", "activity", "goal", "adjustPct",
+    "preset", "bmr", "tdee", "target", "protein", "carbs", "fat", "bmi", "savedAt"];
+
+  function exportCSV() {
+    if (!state.profiles.length) { Store.toast("No profiles to export"); return; }
+    Store.exportCSV("tdee-profiles.csv", state.profiles, CSV_COLS);
+  }
+
+  function importCSV() {
+    Store.importCSV((objs) => {
+      if (!objs || !objs.length) { Store.toast("No rows found"); return; }
+      let added = 0;
+      objs.forEach((o, i) => {
+        const name = (o.name || o.Name || "").trim();
+        if (!name) return;
+        const goal = ["cut", "maintain", "bulk"].indexOf(o.goal) >= 0 ? o.goal : "maintain";
+        state.profiles = state.profiles.filter(x => x.name.toLowerCase() !== name.toLowerCase());
+        state.profiles.push({
+          id: Store.uid(), name: name,
+          sex: o.sex === "female" ? "female" : "male",
+          age: numOr(o.age, 30),
+          heightCm: numOr(o.heightCm, 175),
+          weightKg: numOr(o.weightKg, 75),
+          activity: ACTIVITY.some(a => a.id === o.activity) ? o.activity : "moderate",
+          goal: goal,
+          adjustPct: numOr(o.adjustPct, GOAL_ADJUST[goal]),
+          preset: PRESETS[o.preset] ? o.preset : "balanced",
+          bmr: numOr(o.bmr, 0), tdee: numOr(o.tdee, 0), target: numOr(o.target, 0),
+          protein: numOr(o.protein, 0), carbs: numOr(o.carbs, 0), fat: numOr(o.fat, 0),
+          bmi: numOr(o.bmi, 0),
+          savedAt: o.savedAt || Store.today()
+        });
+        added++;
+      });
+      persist(); renderProfiles();
+      Store.toast("Imported " + added + " profile(s)");
+    });
+  }
+
+  /* ---------------- summary ---------------- */
+  function summaryText() {
+    const r = calculate(readForm());
+    if (!r.ok) return "";
+    return "TDEE & macros (estimate, not medical advice)\n" +
+      "Sex/age: " + state.form.sex + ", " + r.age + " y · Height " + Store.num(r.cm, 1) + " cm · Weight " + Store.num(r.kg, 1) + " kg\n" +
+      "BMR " + Store.num(r.bmr, 0) + " kcal · TDEE " + Store.num(r.tdee, 0) + " kcal (×" + r.act.f + " " + r.act.id + ")\n" +
+      "Goal " + state.form.goal + " (" + (r.adj > 0 ? "+" : "") + r.adj + "%) → target " + Store.num(r.target, 0) + " kcal/day\n" +
+      "Macros (" + r.preset.label + "): " +
+      r.macros.map(m => m.name + " " + Store.num(m.grams, 0) + " g (" + m.pct + "%)").join(", ") + "\n" +
+      "BMI " + Store.num(r.bmi, 1);
+  }
+
+  function copySummary() {
+    const t = summaryText();
+    if (!t) { Store.toast("Fix the inputs first"); return; }
+    const done = () => Store.toast("Summary copied");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(done, () => fallbackCopy(t, done));
+    } else fallbackCopy(t, done);
+  }
+  function fallbackCopy(text, done) {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) { Store.toast("Copy failed"); }
+    document.body.removeChild(ta);
+  }
+
+  /* ---------------- events ---------------- */
+  const inputs = [el.sex, el.age, el.cm, el.ft, el.inch, el.kg, el.lb, el.activity, el.goal, el.adjustPct, el.preset];
+  inputs.forEach(i => i.addEventListener("input", () => render(readForm())));
+  inputs.forEach(i => i.addEventListener("change", () => render(readForm())));
+
+  el.heightUnit.addEventListener("change", () => {
+    // Convert the value across units so the number doesn't silently change meaning.
+    const f = state.form;
+    if (el.heightUnit.value === "ft" && f.heightUnit === "cm") {
+      const totalIn = (Number(el.cm.value) || 0) / 2.54;
+      el.ft.value = Math.floor(totalIn / 12);
+      el.inch.value = Math.round((totalIn % 12) * 10) / 10;
+    } else if (el.heightUnit.value === "cm" && f.heightUnit === "ft") {
+      el.cm.value = Math.round(((Number(el.ft.value) || 0) * 30.48 + (Number(el.inch.value) || 0) * 2.54) * 10) / 10;
+    }
+    toggleUnits(); render(readForm());
+  });
+
+  el.weightUnit.addEventListener("change", () => {
+    const f = state.form;
+    if (el.weightUnit.value === "lb" && f.weightUnit === "kg") {
+      el.lb.value = Math.round(((Number(el.kg.value) || 0) / KG_PER_LB) * 10) / 10;
+    } else if (el.weightUnit.value === "kg" && f.weightUnit === "lb") {
+      el.kg.value = Math.round(((Number(el.lb.value) || 0) * KG_PER_LB) * 10) / 10;
+    }
+    toggleUnits(); render(readForm());
+  });
+
+  // Changing goal moves the adjustment to that goal's default.
+  el.goal.addEventListener("change", () => {
+    el.adjustPct.value = GOAL_ADJUST[el.goal.value] || 0;
+    hintGoal(); render(readForm());
+  });
+  function hintGoal() {
+    const g = el.goal.value;
+    const txt = g === "cut" ? "A 10–20% deficit is typical (safe default: −20%)."
+      : g === "bulk" ? "A 10–20% surplus is typical; more than that mostly adds fat."
+      : "Maintenance: 0% — eat at TDEE.";
+    el.adjustHint.textContent = txt;
+  }
+  el.adjustPct.addEventListener("input", hintGoal);
+
+  $("resetForm").addEventListener("click", () => {
+    state.form = Object.assign({}, DEFAULTS.form);
+    renderForm(); hintGoal(); render(readForm());
+    Store.toast("Inputs reset");
+  });
+
+  $("saveProfile").addEventListener("click", saveProfile);
+  $("exportBtn").addEventListener("click", exportCSV);
+  $("importBtn").addEventListener("click", importCSV);
+  $("copyBtn").addEventListener("click", copySummary);
+
+  $("clearBtn").addEventListener("click", () => {
+    if (!confirm("Clear all TDEE data (inputs and every saved profile) from this browser?")) return;
+    Store.remove(NS);
+    state = { form: Object.assign({}, DEFAULTS.form), profiles: [] };
+    renderForm(); hintGoal(); render(readForm()); renderProfiles();
+    Store.toast("All data cleared");
+  });
+
+  // Event delegation for profile row buttons.
+  el.profileRows.addEventListener("click", (e) => {
+    const l = e.target.getAttribute && e.target.getAttribute("data-load");
+    const d = e.target.getAttribute && e.target.getAttribute("data-del");
+    if (l) loadProfile(l);
+    if (d) deleteProfile(d);
+  });
+
+  /* ---------------- boot ---------------- */
+  renderForm();
+  hintGoal();
+  render(readForm());
+  renderProfiles();
+})();
+</script>
+</body></html>

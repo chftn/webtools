@@ -1,0 +1,489 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+<title>Net Worth Tracker — Assets &amp; Liabilities | Toolbox</title>
+<link rel="stylesheet" href="../../assets/css/base.css">
+<meta name="description" content="Track your net worth over time with a free, private tracker. Log assets and liabilities, view snapshots and trends, and export to CSV — your data stays in your browser.">
+<meta name="keywords" content="net worth tracker, assets liabilities, net worth over time, wealth tracking, CSV export, private finance">
+<meta name="author" content="ATLAS / George">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#070b12">
+<link rel="canonical" href="https://chftn.github.io/webtools/tools/net-worth/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Toolbox">
+<meta property="og:title" content="Net Worth Tracker — Assets &amp; Liabilities | Toolbox">
+<meta property="og:description" content="Track your net worth over time with a free, private tracker. Log assets and liabilities, view snapshots and trends, and export to CSV — your data stays in your browser.">
+<meta property="og:url" content="https://chftn.github.io/webtools/tools/net-worth/">
+<meta property="og:locale" content="en_AU">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Net Worth Tracker — Assets &amp; Liabilities | Toolbox">
+<meta name="twitter:description" content="Track your net worth over time with a free, private tracker. Log assets and liabilities, view snapshots and trends, and export to CSV — your data stays in your browser.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Net Worth Tracker \u2014 Assets & Liabilities | Toolbox","url":"https://chftn.github.io/webtools/tools/net-worth/","description":"Track your net worth over time with a free, private tracker. Log assets and liabilities, view snapshots and trends, and export to CSV \u2014 your data stays in your browser.","inLanguage":"en","isAccessibleForFree":true,"operatingSystem":"Any","browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"applicationCategory":"FinanceApplication"}</script>
+</head>
+<body>
+<div class="topbar"><div class="inner"><span class="brand">💰 Net Worth Tracker</span><span class="spacer"></span>
+<a class="back" href="../../index.html">← All tools</a></div></div>
+<div class="wrap" role="main">
+  <h1>Net Worth Tracker</h1><p class="sub">List what you own and what you owe, snapshot it, and watch the line trend.</p>
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi"><div class="v pos" id="kAssets">A$0.00</div><div class="l">Total assets</div></div>
+    <div class="kpi"><div class="v neg" id="kLiab">A$0.00</div><div class="l">Total liabilities</div></div>
+    <div class="kpi"><div class="v" id="kNet">A$0.00</div><div class="l">Net worth</div></div>
+    <div class="kpi"><div class="v" id="kDelta">—</div><div class="l">Since last snapshot</div></div>
+  </div>
+
+  <!-- Add item -->
+  <h2>Add an item</h2>
+  <div class="card">
+    <div class="row">
+      <div><label for="fType">Type</label>
+        <select id="fType"><option value="asset">Asset</option><option value="liability">Liability</option></select></div>
+      <div><label for="fName">Name</label><input id="fName" placeholder="e.g. Offset account" maxlength="80"></div>
+      <div><label for="fCat">Category</label>
+        <input id="fCat" list="catList" placeholder="e.g. Cash" maxlength="40">
+        <datalist id="catList"></datalist></div>
+      <div><label for="fVal">Value</label><input id="fVal" inputmode="decimal" placeholder="0.00"></div>
+    </div>
+    <div class="actions" style="margin-bottom:0">
+      <button class="btn primary" id="btnAdd">+ Add item</button>
+      <button class="btn" id="btnDemo">Load example</button>
+    </div>
+  </div>
+
+  <!-- Lists -->
+  <div class="grid two" style="margin-top:14px">
+    <div class="card">
+      <h2 style="margin-top:0">Assets <span class="pill" id="cAssets">0</span></h2>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Name</th><th>Category</th><th class="num">Value</th><th></th></tr></thead>
+        <tbody id="tbAssets"></tbody>
+      </table></div>
+      <div class="empty hidden" id="eAssets">No entries yet.</div>
+    </div>
+    <div class="card">
+      <h2 style="margin-top:0">Liabilities <span class="pill" id="cLiab">0</span></h2>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Name</th><th>Category</th><th class="num">Value</th><th></th></tr></thead>
+        <tbody id="tbLiab"></tbody>
+      </table></div>
+      <div class="empty hidden" id="eLiab">No entries yet.</div>
+    </div>
+  </div>
+
+  <!-- Snapshots -->
+  <h2>Snapshots</h2>
+  <div class="card">
+    <div class="row">
+      <div><label for="snapDate">Snapshot date</label><input type="date" id="snapDate"></div>
+      <div><label for="snapNote">Note (optional)</label><input id="snapNote" placeholder="e.g. after bonus" maxlength="80"></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btnSnap">📸 Save snapshot of current totals</button>
+    </div>
+    <p class="muted" style="font-size:13px;margin:0">Saving a date that already exists overwrites that snapshot.</p>
+  </div>
+
+  <h3>Net worth over time</h3>
+  <div class="card" id="chart"></div>
+
+  <h3>Snapshot history</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Date</th><th>Note</th><th class="num">Assets</th><th class="num">Liabilities</th><th class="num">Net</th><th class="num">Δ</th><th></th></tr></thead>
+    <tbody id="tbSnaps"></tbody>
+  </table></div>
+  <div class="empty hidden" id="eSnaps">No snapshots yet.</div>
+
+  <!-- Data -->
+  <h2>Data</h2>
+  <div class="actions">
+    <button class="btn" id="xItems">⬇ Export items CSV</button>
+    <button class="btn" id="iItems">⬆ Import items CSV</button>
+    <button class="btn" id="xSnaps">⬇ Export snapshots CSV</button>
+    <button class="btn" id="iSnaps">⬆ Import snapshots CSV</button>
+    <button class="btn bad" id="btnClear">🗑 Clear data</button>
+  </div>
+
+  <footer>Data stays in this browser · <a href="../../index.html">Toolbox</a></footer>
+</div>
+
+<script src="../../assets/js/store.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var NS = "net-worth";
+  var CATEGORIES = ["Cash", "Savings", "Offset", "Investments", "Shares", "Super", "Property", "Vehicle",
+    "Crypto", "Business", "Mortgage", "Personal loan", "Credit card", "HECS/HELP", "Car loan"];
+
+  /* ---------- state ---------- */
+  var state = Store.get(NS, { items: [], snapshots: [] });
+  if (!state || typeof state !== "object") state = { items: [], snapshots: [] };
+  if (!Array.isArray(state.items)) state.items = [];
+  if (!Array.isArray(state.snapshots)) state.snapshots = [];
+
+  function save() { Store.set(NS, state); }
+
+  /* Lenient number parse: strips $, commas, spaces, handles (123) negatives. */
+  function parseNum(v) {
+    if (typeof v === "number") return isFinite(v) ? v : 0;
+    var s = String(v == null ? "" : v).trim();
+    var neg = /^\(.*\)$/.test(s) || s.charAt(0) === "-";
+    s = s.replace(/[^0-9.\-]/g, "");
+    var n = parseFloat(s);
+    if (!isFinite(n)) return 0;
+    return neg ? -Math.abs(n) : n;
+  }
+
+  function totals() {
+    var a = 0, l = 0;
+    state.items.forEach(function (it) {
+      if (it.type === "liability") l += Number(it.value) || 0;
+      else a += Number(it.value) || 0;
+    });
+    return { assets: a, liabilities: l, net: a - l };
+  }
+
+  /* ---------- rendering ---------- */
+  var tbodyAssets = document.getElementById("tbAssets");
+  var tbodyLiab = document.getElementById("tbLiab");
+
+  function itemRow(it) {
+    return '<tr data-row="' + it.id + '">' +
+      '<td><input data-id="' + it.id + '" data-field="name" value="' + Store.esc(it.name) +
+        '" maxlength="80" style="padding:6px 8px;font-size:14px"></td>' +
+      '<td><input data-id="' + it.id + '" data-field="category" list="catList" value="' + Store.esc(it.category) +
+        '" maxlength="40" style="padding:6px 8px;font-size:14px"></td>' +
+      '<td class="num"><input data-id="' + it.id + '" data-field="value" inputmode="decimal" value="' +
+        Store.esc(it.value === 0 ? "0" : it.value) +
+        '" style="padding:6px 8px;font-size:14px;text-align:right"></td>' +
+      '<td style="width:1%"><button class="btn bad sm" data-del="' + it.id + '" title="Delete">Delete</button></td>' +
+      '</tr>';
+  }
+
+  function renderItems() {
+    var as = state.items.filter(function (i) { return i.type !== "liability"; });
+    var li = state.items.filter(function (i) { return i.type === "liability"; });
+    tbodyAssets.innerHTML = as.map(itemRow).join("");
+    tbodyLiab.innerHTML = li.map(itemRow).join("");
+    document.getElementById("eAssets").classList.toggle("hidden", as.length > 0);
+    document.getElementById("eLiab").classList.toggle("hidden", li.length > 0);
+    document.getElementById("cAssets").textContent = as.length;
+    document.getElementById("cLiab").textContent = li.length;
+  }
+
+  function sortedSnaps() {
+    // oldest first; ties broken by insertion order
+    return state.snapshots.slice().sort(function (a, b) {
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+    });
+  }
+
+  function renderSnaps() {
+    var snaps = sortedSnaps();
+    var tb = document.getElementById("tbSnaps");
+    tb.innerHTML = snaps.map(function (s, idx) {
+      var prev = idx > 0 ? snaps[idx - 1] : null;
+      var delta = prev ? (s.net - prev.net) : null;
+      var dcell = delta == null ? '<span class="muted">—</span>'
+        : '<span class="' + (delta >= 0 ? "pos" : "neg") + '">' + (delta >= 0 ? "+" : "") + Store.money(delta) + '</span>';
+      return '<tr>' +
+        '<td>' + Store.esc(s.date) + '</td>' +
+        '<td class="muted">' + (s.note ? Store.esc(s.note) : "—") + '</td>' +
+        '<td class="num">' + Store.money(s.assets) + '</td>' +
+        '<td class="num">' + Store.money(s.liabilities) + '</td>' +
+        '<td class="num ' + (s.net >= 0 ? "pos" : "neg") + '"><b>' + Store.money(s.net) + '</b></td>' +
+        '<td class="num">' + dcell + '</td>' +
+        '<td style="width:1%"><button class="btn bad sm" data-delsnap="' + Store.esc(s.date) + '">Delete</button></td>' +
+        '</tr>';
+    }).join("");
+    document.getElementById("eSnaps").classList.toggle("hidden", snaps.length > 0);
+  }
+
+  function updateKpis() {
+    var t = totals();
+    document.getElementById("kAssets").textContent = Store.money(t.assets);
+    document.getElementById("kLiab").textContent = Store.money(t.liabilities);
+    var net = document.getElementById("kNet");
+    net.textContent = Store.money(t.net);
+    net.className = "v " + (t.net >= 0 ? "pos" : "neg");
+
+    var snaps = sortedSnaps();
+    var last = snaps.length ? snaps[snaps.length - 1] : null;
+    var el = document.getElementById("kDelta");
+    if (!last) { el.textContent = "—"; el.className = "v"; }
+    else {
+      var d = t.net - last.net;
+      el.textContent = (d >= 0 ? "+" : "−") + Store.money(Math.abs(d));
+      el.className = "v " + (d >= 0 ? "pos" : "neg");
+      el.title = "Current totals vs snapshot " + last.date;
+    }
+  }
+
+  /* ---------- hand-rolled SVG line chart ---------- */
+  function drawChart() {
+    var host = document.getElementById("chart");
+    var snaps = sortedSnaps();
+    if (!snaps.length) {
+      host.innerHTML = '<div class="empty">No snapshots yet — save one to start the chart.</div>';
+      return;
+    }
+
+    var W = 720, H = 280, pl = 78, pr = 18, pt = 18, pb = 40;
+    var iw = W - pl - pr, ih = H - pt - pb;
+
+    var vals = snaps.map(function (s) { return s.net; });
+    var lo = Math.min.apply(null, vals.concat([0]));
+    var hi = Math.max.apply(null, vals.concat([0]));
+    if (lo === hi) { lo -= 1; hi += 1; }
+    var padY = (hi - lo) * 0.12;
+    lo -= padY; hi += padY;
+
+    var n = snaps.length;
+    var x = function (i) { return n === 1 ? pl + iw / 2 : pl + iw * i / (n - 1); };
+    var y = function (v) { return pt + ih - ((v - lo) / (hi - lo)) * ih; };
+
+    var parts = [];
+    parts.push('<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Net worth over time" ' +
+      'style="display:block;overflow:visible">');
+
+    // horizontal gridlines + y labels
+    var STEPS = 4;
+    for (var g = 0; g <= STEPS; g++) {
+      var gv = lo + (hi - lo) * g / STEPS;
+      var gy = y(gv);
+      parts.push('<line x1="' + pl + '" y1="' + gy.toFixed(1) + '" x2="' + (pl + iw) + '" y2="' + gy.toFixed(1) +
+        '" stroke="var(--border)" stroke-width="1"/>');
+      parts.push('<text x="' + (pl - 8) + '" y="' + (gy + 4).toFixed(1) + '" text-anchor="end" fill="var(--muted)" ' +
+        'font-size="11">' + Store.num(Math.round(gv)) + '</text>');
+    }
+    // emphasise the zero line when profits and losses are both in range
+    if (lo < 0 && hi > 0) {
+      parts.push('<line x1="' + pl + '" y1="' + y(0).toFixed(1) + '" x2="' + (pl + iw) + '" y2="' + y(0).toFixed(1) +
+        '" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3"/>');
+    }
+
+    var baseline = pt + ih;
+    var line = snaps.map(function (s, i) { return (i ? "L" : "M") + x(i).toFixed(1) + " " + y(s.net).toFixed(1); }).join(" ");
+
+    // area fill under the line
+    if (n > 1) {
+      parts.push('<path d="' + line + ' L' + x(n - 1).toFixed(1) + ' ' + baseline + ' L' + x(0).toFixed(1) + ' ' +
+        baseline + ' Z" fill="rgba(34,211,238,.16)" stroke="none"/>');
+    }
+    parts.push('<path d="' + line + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" ' +
+      'stroke-linecap="round"/>');
+
+    // data points with native tooltips
+    snaps.forEach(function (s, i) {
+      parts.push('<circle cx="' + x(i).toFixed(1) + '" cy="' + y(s.net).toFixed(1) + '" r="4" ' +
+        'fill="var(--bg)" stroke="var(--accent)" stroke-width="2"><title>' + Store.esc(s.date) + ' — ' +
+        Store.esc(Store.money(s.net)) + '</title></circle>');
+    });
+
+    // x labels — thin them out so they never collide, and pin the end labels inside the plot
+    var every = Math.max(1, Math.ceil(n / 6));
+    snaps.forEach(function (s, i) {
+      if (i % every !== 0 && i !== n - 1) return;
+      var anchor = "middle";
+      if (i === 0 && n > 1) anchor = "start";
+      if (i === n - 1 && n > 1) anchor = "end";
+      parts.push('<text x="' + x(i).toFixed(1) + '" y="' + (pt + ih + 20) + '" text-anchor="' + anchor + '" ' +
+        'fill="var(--muted)" font-size="11">' + Store.esc(s.date.slice(2)) + '</text>');
+    });
+
+    parts.push('</svg>');
+    host.innerHTML = parts.join("");
+
+    // summary line under the chart
+    var first = snaps[0], last = snaps[n - 1];
+    var change = last.net - first.net;
+    host.insertAdjacentHTML("beforeend",
+      '<p class="muted" style="margin:10px 0 0;font-size:13px">' + n + ' snapshot' + (n === 1 ? "" : "s") +
+      ' · ' + Store.esc(first.date) + ' → ' + Store.esc(last.date) + ' · change <span class="' +
+      (change >= 0 ? "pos" : "neg") + '">' + (change >= 0 ? "+" : "−") + Store.money(Math.abs(change)) + '</span></p>');
+  }
+
+  function renderAll() { renderItems(); renderSnaps(); updateKpis(); drawChart(); }
+
+  /* ---------- add / edit / delete ---------- */
+  function fillCategories() {
+    // datalist = built-in suggestions + whatever the user has already typed
+    var used = {};
+    state.items.forEach(function (i) { if (i.category) used[i.category] = 1; });
+    var all = CATEGORIES.concat(Object.keys(used).filter(function (c) { return CATEGORIES.indexOf(c) < 0; }));
+    document.getElementById("catList").innerHTML = all.map(function (c) {
+      return '<option value="' + Store.esc(c) + '"></option>';
+    }).join("");
+  }
+
+  document.getElementById("btnAdd").addEventListener("click", function () {
+    var name = document.getElementById("fName").value.trim();
+    var cat = document.getElementById("fCat").value.trim();
+    var val = parseNum(document.getElementById("fVal").value);
+    var type = document.getElementById("fType").value;
+    if (!name) { Store.toast("Give the item a name"); document.getElementById("fName").focus(); return; }
+    state.items.push({ id: Store.uid(), type: type, name: name, category: cat, value: val });
+    save();
+    document.getElementById("fName").value = "";
+    document.getElementById("fVal").value = "";
+    fillCategories(); renderAll();
+    Store.toast("Added " + name);
+  });
+
+  // Enter in the value field submits the form
+  ["fName", "fCat", "fVal"].forEach(function (id) {
+    document.getElementById(id).addEventListener("keydown", function (e) {
+      if (e.key === "Enter") document.getElementById("btnAdd").click();
+    });
+  });
+
+  // Live edits: update the model + KPIs without re-rendering (keeps input focus)
+  function onEdit(e) {
+    var inp = e.target;
+    if (!inp.dataset || !inp.dataset.id) return;
+    var it = state.items.filter(function (i) { return i.id === inp.dataset.id; })[0];
+    if (!it) return;
+    var f = inp.dataset.field;
+    it[f] = (f === "value") ? parseNum(inp.value) : inp.value;
+    save(); updateKpis(); fillCategories();
+  }
+  [tbodyAssets, tbodyLiab].forEach(function (tb) {
+    tb.addEventListener("input", onEdit);
+    tb.addEventListener("change", function (e) {
+      // normalise the value cell once the user leaves it
+      if (e.target.dataset && e.target.dataset.field === "value") {
+        e.target.value = String(parseNum(e.target.value));
+        onEdit(e);
+      }
+    });
+    tb.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-del]");
+      if (!b) return;
+      var id = b.dataset.del;
+      var it = state.items.filter(function (i) { return i.id === id; })[0];
+      if (!it) return;
+      if (!confirm('Delete "' + it.name + '"?')) return;
+      state.items = state.items.filter(function (i) { return i.id !== id; });
+      save(); fillCategories(); renderAll();
+      Store.toast("Deleted");
+    });
+  });
+
+  document.getElementById("tbSnaps").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-delsnap]");
+    if (!b) return;
+    var d = b.dataset.delsnap;
+    if (!confirm("Delete snapshot " + d + "?")) return;
+    state.snapshots = state.snapshots.filter(function (s) { return s.date !== d; });
+    save(); renderAll();
+    Store.toast("Snapshot deleted");
+  });
+
+  /* ---------- snapshots ---------- */
+  document.getElementById("snapDate").value = Store.today();
+
+  document.getElementById("btnSnap").addEventListener("click", function () {
+    var d = document.getElementById("snapDate").value || Store.today();
+    var t = totals();
+    var existing = state.snapshots.filter(function (s) { return s.date === d; })[0];
+    var note = document.getElementById("snapNote").value.trim();
+    if (existing) {
+      if (!confirm("A snapshot for " + d + " exists. Overwrite it?")) return;
+      existing.assets = t.assets; existing.liabilities = t.liabilities;
+      existing.net = t.net; existing.note = note;
+      Store.toast("Snapshot " + d + " updated");
+    } else {
+      state.snapshots.push({ date: d, assets: t.assets, liabilities: t.liabilities, net: t.net, note: note });
+      Store.toast("Snapshot " + d + " saved");
+    }
+    document.getElementById("snapNote").value = "";
+    save(); renderAll();
+  });
+
+  /* ---------- example data ---------- */
+  document.getElementById("btnDemo").addEventListener("click", function () {
+    if (state.items.length && !confirm("Add the example items to your existing list?")) return;
+    var demo = [
+      { type: "asset", name: "Everyday offset", category: "Offset", value: 12500 },
+      { type: "asset", name: "Index fund portfolio", category: "Investments", value: 48200 },
+      { type: "asset", name: "Superannuation", category: "Super", value: 91400 },
+      { type: "asset", name: "Car", category: "Vehicle", value: 14000 },
+      { type: "liability", name: "Home loan", category: "Mortgage", value: 412000 },
+      { type: "liability", name: "Credit card", category: "Credit card", value: 1850 }
+    ];
+    demo.forEach(function (d) { d.id = Store.uid(); state.items.push(d); });
+    save(); fillCategories(); renderAll();
+    Store.toast("Example items added");
+  });
+
+  /* ---------- CSV / clear ---------- */
+  document.getElementById("xItems").addEventListener("click", function () {
+    if (!state.items.length) { Store.toast("Nothing to export"); return; }
+    Store.exportCSV("net-worth-items", state.items.map(function (i) {
+      return { type: i.type, name: i.name, category: i.category, value: i.value };
+    }), ["type", "name", "category", "value"]);
+  });
+
+  document.getElementById("xSnaps").addEventListener("click", function () {
+    if (!state.snapshots.length) { Store.toast("Nothing to export"); return; }
+    Store.exportCSV("net-worth-snapshots", sortedSnaps().map(function (s) {
+      return { date: s.date, assets: s.assets, liabilities: s.liabilities, net: s.net, note: s.note || "" };
+    }), ["date", "assets", "liabilities", "net", "note"]);
+  });
+
+  document.getElementById("iItems").addEventListener("click", function () {
+    Store.importCSV(function (objs) {
+      var added = 0;
+      objs.forEach(function (o) {
+        var name = String(o.name || o.Name || "").trim();
+        if (!name) return;
+        var t = String(o.type || o.Type || "asset").trim().toLowerCase();
+        state.items.push({
+          id: Store.uid(),
+          type: (t.indexOf("liab") === 0 || t === "debt") ? "liability" : "asset",
+          name: name,
+          category: String(o.category || o.Category || "").trim(),
+          value: parseNum(o.value != null ? o.value : o.Value)
+        });
+        added++;
+      });
+      save(); fillCategories(); renderAll();
+      if (!added) Store.toast("No usable rows found (need a name column)");
+    });
+  });
+
+  document.getElementById("iSnaps").addEventListener("click", function () {
+    Store.importCSV(function (objs) {
+      var added = 0;
+      objs.forEach(function (o) {
+        var d = String(o.date || o.Date || "").trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+        var a = parseNum(o.assets), l = parseNum(o.liabilities);
+        var net = (o.net === "" || o.net == null) ? (a - l) : parseNum(o.net);
+        var ex = state.snapshots.filter(function (s) { return s.date === d; })[0];
+        var rec = { date: d, assets: a, liabilities: l, net: net, note: String(o.note || "").trim() };
+        if (ex) { Object.assign(ex, rec); } else { state.snapshots.push(rec); }
+        added++;
+      });
+      save(); renderAll();
+      if (!added) Store.toast("No rows with a valid YYYY-MM-DD date");
+    });
+  });
+
+  document.getElementById("btnClear").addEventListener("click", function () {
+    if (!state.items.length && !state.snapshots.length) { Store.toast("Nothing to clear"); return; }
+    if (!confirm("Delete ALL items and snapshots? This cannot be undone.")) return;
+    state = { items: [], snapshots: [] };
+    Store.remove(NS); save();
+    fillCategories(); renderAll();
+    Store.toast("All data cleared");
+  });
+
+  /* ---------- boot ---------- */
+  fillCategories();
+  renderAll();
+})();
+</script>
+</body></html>
